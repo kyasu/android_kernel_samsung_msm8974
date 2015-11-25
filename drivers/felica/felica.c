@@ -324,6 +324,7 @@ static int felica_uart_open(struct inode *inode, struct file *file)
 
 	uid = __task_cred(current)->uid;
 	if ((uid != gmfc_uid) && (uid != gdiag_uid) && (uid != gant_uid)) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR
 		    (" %s END -EACCESS, uid=[%d], gmfc_uid=[%d], gdiag_uid=[%d]",
 		     __func__, uid, gmfc_uid, gdiag_uid);
@@ -331,6 +332,7 @@ static int felica_uart_open(struct inode *inode, struct file *file)
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -1064,6 +1066,7 @@ static int felica_CpuAll(void)
 
 static uint8_t felica_get_tamper_fuse_cmd(void)
 {
+#ifndef CONFIG_FELICA_NO_SECURE
 	u32 fuse_id = 0;
 	int ret;
 
@@ -1083,13 +1086,16 @@ static uint8_t felica_get_tamper_fuse_cmd(void)
 	felica_CpuAll();
 
 	return (uint8_t)fuse_id;
+#else
+	return 0;
+#endif
 }
 
 #elif defined(CONFIG_ARCH_APQ8064) || defined(CONFIG_ARCH_MSM8974) || defined(CONFIG_ARCH_MSM8974PRO)
 
 static uint8_t felica_get_tamper_fuse_cmd(void)
 {
-
+#ifndef CONFIG_FELICA_NO_SECURE
 	uint32_t fuse_id = FELICA_HLOS_IMG_TAMPER_FUSE;
 	void *cmd_buf;
 	size_t cmd_len;
@@ -1112,6 +1118,9 @@ static uint8_t felica_get_tamper_fuse_cmd(void)
 #endif		
 
 	return resp_buf;
+#else
+	return 0;
+#endif
 }
 #endif
 
@@ -1225,6 +1234,7 @@ static int felica_pon_open(struct inode *inode, struct file *file)
 	if ((uid != gmfc_uid) && (uid != gdiag_uid)
 	&& (uid != gant_uid)) {
 #endif
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR
 		    (" %s END -EACCES, uid=[%d], gmfc_uid=[%d], gdiag_uid=[%d]",
 		     __func__, uid, gmfc_uid, gdiag_uid);
@@ -1232,6 +1242,7 @@ static int felica_pon_open(struct inode *inode, struct file *file)
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -1829,6 +1840,7 @@ static int felica_rfs_open(struct inode *inode, struct file *file)
 	uid = __task_cred(current)->uid;
 
 	if ((uid != gmfc_uid) && (uid != gdiag_uid)) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR
 		    (" %s -EACCESS, uid=[%d], gmfc_uid=[%d], gdiag_uid=[%d]",
 		     __func__, uid, gmfc_uid, gdiag_uid);
@@ -1836,6 +1848,7 @@ static int felica_rfs_open(struct inode *inode, struct file *file)
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -1973,6 +1986,7 @@ static int felica_rws_open(struct inode *inode, struct file *file)
 	uid = __task_cred(current)->uid;
 	if (file->f_mode & FMODE_WRITE) {
 		if (uid != grwm_uid) {
+#ifndef CONFIG_FELICA_NO_SECURE
 			FELICA_PR_ERR(\
 			" %s END -EACCES, uid=[%d],gmfc_uid=[%d],gdiag_uid=[%d]",
 			     __func__, uid, gmfc_uid, gdiag_uid);
@@ -1981,9 +1995,11 @@ static int felica_rws_open(struct inode *inode, struct file *file)
 #else
 			return -EACCES;
 #endif
+#endif
 		}
 	} else {
 		if ((uid != gmfc_uid) && (uid != grwm_uid)) {
+#ifndef CONFIG_FELICA_NO_SECURE
 			FELICA_PR_ERR(\
 			" %s END -EACCES, uid=[%d],gmfc_uid=[%d],gdiag_uid=[%d]",
 			     __func__, uid, gmfc_uid, gdiag_uid);
@@ -1991,6 +2007,7 @@ static int felica_rws_open(struct inode *inode, struct file *file)
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 			return -EACCES;
+#endif
 #endif
 		}
 	}
@@ -2542,12 +2559,14 @@ static int felica_uid_open(struct inode *inode, struct file *file)
 	}
 
 	if (strncmp(cmdline, gdiag_name, leng) != 0) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_INFO(" %s ERROR, %s gdiag %s", \
 			__func__, cmdline, gdiag_name);
 #ifdef SRIB_DIAG_ENABLED
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -2677,6 +2696,7 @@ static int felica_ant_open(struct inode *inode, struct file *file)
 	
 	uid = __task_cred(current)->uid;
 	if ((uid != gant_uid) && (uid != gdiag_uid)) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR(\
 		" %s END -EACCES, uid=[%d], gant_uid=[%d]\n", __func__, uid, gant_uid);
 		
@@ -2693,6 +2713,7 @@ static int felica_ant_open(struct inode *inode, struct file *file)
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -4163,12 +4184,14 @@ static int cxd2235power_open(struct inode *inode, struct file *file)
 
 	uid_ret = snfc_uid_check();
 	if (uid_ret < 0) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR
 		    (" %s open fail=[%d]", __func__, uid_ret);
 #ifdef SRIB_DIAG_ENABLED
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -4305,12 +4328,14 @@ static int snfc_rfs_open(struct inode *inode, struct file *file)
 
 	uid_ret = snfc_uid_check();
 	if (uid_ret < 0) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR
 		    (" %s open fail=[%d]", __func__, uid_ret);
 #ifdef SRIB_DIAG_ENABLED
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
@@ -4449,12 +4474,14 @@ static int snfc_uart_open(struct inode *inode, struct file *file)
 	/* check NFC uid */
 	uid = __task_cred(current)->uid;
 	if (uid != gnfc_uid) {
+#ifndef CONFIG_FELICA_NO_SECURE
 		FELICA_PR_ERR(\
 		" %s END -EACCES, uid=[%d], gnfc_uid=[%d]\n", __func__, uid,gnfc_uid);
 #ifdef SRIB_DIAG_ENABLED
 		FELICA_PR_ERR(" SRIB-Diag enabled just for test\n");
 #else
 		return -EACCES;
+#endif
 #endif
 	}
 
