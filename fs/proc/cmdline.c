@@ -33,14 +33,15 @@ static int cmdline_proc_open(struct inode *inode, struct file *file)
 static int cmdline_proc_write(struct file *file, const char __user *buf,
 				size_t len, loff_t *ppos)
 {
-	char str[1000];
+	char* str;//char str[1000];
+	str = kmalloc(len+1, GFP_KERNEL);
 	if (copy_from_user(str, buf, len)) {
 		printk( KERN_INFO "[cmdline] copy_from_user failed.\n");
 		return -EFAULT;
 	}
 	str[len] = '\0';
 	strcpy(saved_command_line, str);
-
+kfree(str);
 	return len;
 }
 
