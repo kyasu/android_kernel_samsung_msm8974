@@ -969,7 +969,7 @@ cull_mlocked:
 		if (PageSwapCache(page))
 			try_to_free_swap(page);
 		unlock_page(page);
-		putback_lru_page(page);
+		list_add(&page->lru, &ret_pages);
 		continue;
 
 activate_locked:
@@ -1027,7 +1027,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
 				TTU_UNMAP|TTU_IGNORE_ACCESS,
 				&dummy1, &dummy2, true);
 	list_splice(&clean_pages, page_list);
-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
 	return ret;
 }
 

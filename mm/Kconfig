@@ -511,3 +511,11 @@ config SDP_CACHE_CLEANUP
 	bool "SDP requirement. cache cleanup"
 	depends on SDP
 	default n
+
+config MMAP_READAROUND_LIMIT
+	int "Limit mmap readaround upperbound"
+	default 0
+	help
+	  Inappropriate mmap readaround size can hurt device performance
+	  during the sluggish situation. Add the hard upper-limit for
+	  mmap readaround.
