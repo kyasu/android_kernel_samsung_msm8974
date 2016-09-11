@@ -1374,11 +1374,19 @@ static const struct i2c_device_id felica_i2c_idtable[] =
 MODULE_DEVICE_TABLE(i2c, felica_i2c_idtable);
 
 #if defined(CONFIG_ARCH_MSM8974) || defined(CONFIG_ARCH_MSM8974PRO)
+#if defined(CONFIG_MACH_HLTEDCM) || defined(CONFIG_MACH_HLTEKDI) || defined(CONFIG_MACH_JS01LTEDCM)
+static struct of_device_id felica_i2c_match_table[] =
+{
+	{ .compatible = "felica,felica_irq",},
+	{ },
+};
+#else
 static struct of_device_id felica_i2c_match_table[] = 
 {
 	{ .compatible = "felica,felica-i2c",},
 	{},
 };
+#endif
 #endif
 
 
