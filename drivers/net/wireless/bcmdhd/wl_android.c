@@ -1809,6 +1809,10 @@ int wl_android_wifi_on(struct net_device *dev)
 			if (dhd_dev_init_ioctl(dev) < 0)
 				ret = -EFAULT;
 		}
+#if defined(ENABLE_4335BT_WAR) && defined(CUSTOMER_HW4)
+		bcm_bt_unlock(lock_cookie_wifi);
+		DHD_ERROR(("%s() bcm_bt_unlock\n", __FUNCTION__));
+#endif
 		g_wifi_on = TRUE;
 	}
 
