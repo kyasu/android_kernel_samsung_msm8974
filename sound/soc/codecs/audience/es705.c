@@ -1843,6 +1843,9 @@ static void es705_sleep_request(struct es705_priv *es705)
 	dev_dbg(es705->dev, "%s internal es705_power_state = %d\n",
 		__func__, es705_priv.pm_state);
 
+	if (es705->sleep_delay < 0) /* do not sleep */
+		return;
+
 	mutex_lock(&es705->pm_mutex);
 	if (es705->uart_state == UART_OPEN)
 		es705_uart_close(es705);

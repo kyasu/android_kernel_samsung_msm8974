@@ -480,10 +480,11 @@ enum {
 };
 
 /* 
- * Default delay before switch to sleep - 2sec
+ * Default delay before switch to sleep
+ * If delay value is negative, do not sleep
  * To change delay value use SYSFS sleep delay entry
  */
-#define ES705_SLEEP_DEFAULT_DELAY 2000
+#define ES705_SLEEP_DEFAULT_DELAY (-1)
 
 #if defined(PREVENT_CALL_MUTE_WHEN_SWITCH_NB_AND_WB)
 #define ES705_REROUTE_INV 200
