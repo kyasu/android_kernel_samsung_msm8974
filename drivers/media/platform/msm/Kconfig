@@ -34,11 +34,19 @@ config MSMB_CAMERA_DEBUG
 	---help---
 	  Enable printk() debug for msm camera 2.0
 
+config MSMB_CAMERA_S
+	bool "Qualcomm MSM8974pro camera and video capture 2.0 support"
+	depends on MSMB_CAMERA
+	default n
+	help
+	  Say Y here to enable selecting the video adapters for
+	  Qualcomm msm8974pro camera and video encoding
+
 if MSMB_CAMERA
-if SEC_S_PROJECT
+if MSMB_CAMERA_S
 source "drivers/media/platform/msm/camera_v2_s/Kconfig"
 endif
-if !SEC_S_PROJECT
+if !MSMB_CAMERA_S
 source "drivers/media/platform/msm/camera_v2/Kconfig"
 endif
 endif # MSMB_CAMERA

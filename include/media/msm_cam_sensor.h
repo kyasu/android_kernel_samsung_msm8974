@@ -176,7 +176,7 @@ enum msm_sensor_clk_type_t {
 };
 
 enum msm_sensor_power_seq_gpio_t {
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	SENSOR_GPIO_RESET,
 	SENSOR_GPIO_STANDBY,
 	SENSOR_GPIO_EXT_VANA_POWER,
@@ -213,7 +213,7 @@ enum msm_camera_vreg_name_t {
 	VT_CAM_VDIG,
 	VT_CAM_VANA,
 #endif
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	CAM_COMP_MIPI_1P0,
 	CAM_COMP_1P8,
 #endif
@@ -249,7 +249,7 @@ enum sensor_sub_module_t {
 	SUB_MODULE_CSIPHY_3D,
 	SUB_MODULE_CSID,
 	SUB_MODULE_CSID_3D,
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	SUB_MODULE_COMPANION,
 #endif
 	SUB_MODULE_MAX,
@@ -340,7 +340,7 @@ struct msm_sensor_info_t {
 	char     sensor_name[MAX_SENSOR_NAME];
 	int32_t  session_id;
 	int32_t  subdev_id[SUB_MODULE_MAX];
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	int32_t  subdev_intf[SUB_MODULE_MAX];
 #endif
 	uint8_t  is_mount_angle_valid;
@@ -352,7 +352,7 @@ struct msm_camera_sensor_slave_info {
 	enum msm_sensor_camera_id_t camera_id;
 	uint16_t slave_addr;
 	enum msm_camera_i2c_reg_addr_type addr_type;
-#if !defined(CONFIG_SEC_S_PROJECT)
+#if !defined(CONFIG_MSMB_CAMERA_S)
 	enum msm_camera_i2c_data_type data_type;
 #endif
 	struct msm_sensor_id_info_t sensor_id_info;
@@ -365,7 +365,7 @@ struct msm_camera_sensor_slave_info {
 struct msm_camera_i2c_reg_array {
 	uint16_t reg_addr;
 	uint16_t reg_data;
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 #ifndef BYPASS_COMPANION
 	uint8_t data_type;
 #endif
@@ -540,7 +540,7 @@ enum eeprom_cfg_type_t {
 	CFG_EEPROM_ERASE,
 	CFG_EEPROM_POWER_ON,
 	CFG_EEPROM_POWER_OFF,
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	CFG_EEPROM_READ_DATA_FROM_HW,
 #endif
 };
@@ -570,7 +570,7 @@ struct eeprom_erase_t {
 
 struct msm_eeprom_cfg_data {
 	enum eeprom_cfg_type_t cfgtype;
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	uint16_t is_supported;
 #else
 	uint8_t is_supported;
@@ -796,7 +796,7 @@ struct ioctl_native_cmd {
 #define VIDIOC_MSM_SENSOR_INIT_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 9, struct sensor_init_cfg_data)
 
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 #define VIDIOC_MSM_COMPANION_IO_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 10, struct companion_cfg_data)
 #else

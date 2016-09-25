@@ -63,7 +63,7 @@ enum msm_vfe_frame_skip_pattern {
 	EVERY_6FRAME,
 	EVERY_7FRAME,
 	EVERY_8FRAME,
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	EVERY_9FRAME,
 	EVERY_10FRAME,
 	EVERY_11FRAME,
@@ -165,13 +165,13 @@ struct msm_vfe_axi_stream_cfg_cmd {
 	uint8_t num_streams;
 	uint32_t stream_handle[MAX_NUM_STREAM];
 	enum msm_vfe_axi_stream_cmd cmd;
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	int32_t recording_hint;
 #endif
 };
 
 enum msm_vfe_axi_stream_update_type {
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 	AXI_STREAM_UPDATE_INVALID,
 #endif
 	ENABLE_STREAM_BUF_DIVERT,
@@ -387,7 +387,7 @@ struct msm_isp_error_info {
   uint32_t error_mask; /* 1 << msm_isp_event_idx */
 };
 
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_MSMB_CAMERA_S)
 struct msm_isp_event_data {
 	/*Wall clock except for buffer divert events
 	 *which use monotonic clock
