@@ -172,7 +172,7 @@ int wifi_platform_set_power(wifi_adapter_info_t *adapter, bool on, unsigned long
 #endif /* ENABLE_4335BT_WAR */
 
 #ifdef ENABLE_4335BT_WAR
-		err = plat_data->set_power(on,is4335_revb0);
+		err = plat_data->set_power(on, is4335_revb0);
 #else
 		err = plat_data->set_power(on);
 #endif
@@ -572,6 +572,7 @@ static int dhd_wifi_platform_load_sdio(void)
 			}
 			err = wifi_platform_set_power(adapter, TRUE, WIFI_TURNON_DELAY);
 			if (err) {
+				dhd_bus_unreg_sdio_notify();
 				/* WL_REG_ON state unknown, Power off forcely */
 				wifi_platform_set_power(adapter, FALSE, WIFI_TURNOFF_DELAY);
 				continue;
