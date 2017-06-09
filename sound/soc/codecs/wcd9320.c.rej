@@ -1,0 +1,84 @@
+--- sound/soc/codecs/wcd9320.c	2017-06-09 11:51:43.553361091 +0900
++++ sound/soc/codecs/wcd9320.c	2017-06-09 11:54:26.335250296 +0900
+@@ -4306,8 +4310,13 @@
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_BOEFFLA_SOUND
++int taiko_write(struct snd_soc_codec *codec, unsigned int reg,
++	unsigned int value)
++#else
+ static int taiko_write(struct snd_soc_codec *codec, unsigned int reg,
+ 	unsigned int value)
++#endif	
+ {
+ 	int ret;
+ 	struct wcd9xxx *wcd9xxx = codec->control_data;
+@@ -4316,7 +4325,37 @@
+ 		return 0;
+ 
+ 	BUG_ON(reg > TAIKO_MAX_REGISTER);
++	
++#ifdef CONFIG_BOEFFLA_SOUND
++	// Boeffla Sound write hook
++	value = boeffla_sound_hook_taiko_write(reg, value);
++#endif
++
++	if (!taiko_volatile(codec, reg)) {
++		ret = snd_soc_cache_write(codec, reg, value);
++		if (ret != 0)
++			dev_err(codec->dev, "Cache write to %x failed: %d\n",
++				reg, ret);
++	}
++
++	return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, value);
++}
++#ifdef CONFIG_BOEFFLA_SOUND
++EXPORT_SYMBOL(taiko_write);
++#endif
+ 
++#ifdef CONFIG_BOEFFLA_SOUND
++int taiko_write_no_hook(struct snd_soc_codec *codec, unsigned int reg,
++	unsigned int value)
++{
++	int ret;
++	struct wcd9xxx *wcd9xxx = codec->control_data;
++
++	if (reg == SND_SOC_NOPM)
++		return 0;
++
++	BUG_ON(reg > TAIKO_MAX_REGISTER);
++	
+ 	if (!taiko_volatile(codec, reg)) {
+ 		ret = snd_soc_cache_write(codec, reg, value);
+ 		if (ret != 0)
+@@ -4326,8 +4365,16 @@
+ 
+ 	return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, value);
+ }
++EXPORT_SYMBOL(taiko_write_no_hook);
++#endif
++
++#ifdef CONFIG_BOEFFLA_SOUND
++unsigned int taiko_read(struct snd_soc_codec *codec,
++				unsigned int reg)
++#else
+ static unsigned int taiko_read(struct snd_soc_codec *codec,
+ 				unsigned int reg)
++#endif
+ {
+ 	unsigned int val;
+ 	int ret;
+@@ -7666,6 +7716,12 @@
+ 	mutex_unlock(&dapm->codec->mutex);
+ 
+ 	codec->ignore_pmdown_time = 1;
++	
++#ifdef CONFIG_BOEFFLA_SOUND
++	// Boeffla Sound probe hook
++	boeffla_sound_hook_taiko_codec_probe(codec);
++#endif
++	
+ 	return ret;
+ 
+ err_irq:

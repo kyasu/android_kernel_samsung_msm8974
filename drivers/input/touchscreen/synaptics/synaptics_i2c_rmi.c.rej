@@ -1,0 +1,22 @@
+--- drivers/input/touchscreen/synaptics/synaptics_i2c_rmi.c	2017-06-09 11:51:38.393691234 +0900
++++ drivers/input/touchscreen/synaptics/synaptics_i2c_rmi.c	2017-06-09 11:54:21.619092358 +0900
+@@ -4771,18 +4781,9 @@
+ 	} else if (rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5000) {
+ 		rmi4_data->firmware_name = FW_IMAGE_NAME_NONE;
+ 	} else if (rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5707) {
+-		if (strncmp(rmi4_data->dt_data->project, "Klimt", 5) == 0)
+-			rmi4_data->firmware_name = FW_IMAGE_NAME_S5707_KLIMT;
+-		else if (strncmp(rmi4_data->dt_data->project, "RUBENS", 6) == 0)
+-			rmi4_data->firmware_name = FW_IMAGE_NAME_S5707_RUBENS;
+-		else 
+-			rmi4_data->firmware_name = FW_IMAGE_NAME_S5707;
++		rmi4_data->firmware_name = FW_IMAGE_NAME_S5707;
+ 	} else if (rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5708) {
+ 		rmi4_data->firmware_name = FW_IMAGE_NAME_S5708;
+-	} else if (rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5006) {
+-		rmi4_data->firmware_name = FW_IMAGE_NAME_S5006;		
+-	} else if (rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5710) {
+-			rmi4_data->firmware_name = FW_IMAGE_NAME_S5710; 	
+ 	} else {
+ 		rmi4_data->firmware_name = FW_IMAGE_NAME_NONE;
+ 	}
