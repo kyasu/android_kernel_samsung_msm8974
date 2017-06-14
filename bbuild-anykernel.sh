@@ -10,9 +10,9 @@
 # Parameters to be configured manually
 #######################################
 
-BOEFFLA_VERSION="1.0-test-CM14.1-g900f"
+BOEFFLA_VERSION="1.0-test-CM14.1-js01lte"
 
-TOOLCHAIN="/opt/toolchains/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-"
+TOOLCHAIN="$PWD/../../../prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-"
 ARCHITECTURE=arm
 COMPILER_FLAGS_KERNEL=""
 COMPILER_FLAGS_MODULE=""
@@ -24,10 +24,10 @@ DTBTOOL_CMD="-2"
 MODULES_IN_SYSTEM="y"
 OUTPUT_FOLDER="output"
 
-DEFCONFIG="boeffla_defconfig"
-DEFCONFIG_VARIANT="boeffla_defconfig_variant"
+DEFCONFIG="cm_msm8974_sec_js01lte_dcm_defconfig"
+DEFCONFIG_VARIANT="cm_msm8974_sec_defconfig"
 
-KERNEL_NAME="Boeffla-Kernel"
+KERNEL_NAME="msm8974"
 
 FINISH_MAIL_TO=""
 
