@@ -166,25 +166,12 @@ void wake_funcs_set_prox(bool state)
 	
 		s32 dMsDelay = 20;
 		memcpy(&chTempbuf[0], &dMsDelay, 4);
-
 		if (state)
-		{
-			if (main_prox_data->bProximityRawEnabled == false)
-			{
-				send_instruction(main_prox_data, ADD_SENSOR, PROXIMITY_RAW, chTempbuf, 4);
-				msleep(200);
-				main_prox_data->bProximityRawEnabled = state;
-			}
-		}
+			send_instruction(main_prox_data, ADD_SENSOR, PROXIMITY_RAW, chTempbuf, 4);
 		else
-		{
-			if (main_prox_data->bProximityRawEnabled == true)
-			{
-				send_instruction(main_prox_data, REMOVE_SENSOR, PROXIMITY_RAW, chTempbuf, 4);
-				msleep(200);
-				main_prox_data->bProximityRawEnabled = state;
-			}
-		}
+			send_instruction(main_prox_data, REMOVE_SENSOR, PROXIMITY_RAW, chTempbuf, 4);
+		
+		main_prox_data->bProximityRawEnabled = state;
 	}
 }
 
