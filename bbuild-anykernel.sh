@@ -27,7 +27,7 @@ OUTPUT_FOLDER="output"
 DEFCONFIG="cm_msm8974_sec_js01lte_dcm_defconfig"
 DEFCONFIG_VARIANT="cm_msm8974_sec_defconfig"
 
-KERNEL_NAME="msm8974"
+KERNEL_NAME="Boeffla-Kernel"
 
 FINISH_MAIL_TO=""
 
