@@ -53,7 +53,18 @@ chmod -R 755 $ramdisk/res/bc
 chmod -R 755 $ramdisk/res/misc
 
 # ramdisk changes
-# ... none
+
+# Felica
+insert_line init.qcom.rc "import init.carrier.rc" after "import init.qcom.usb.rc" "import init.carrier.rc";
+replace_line ueventd.qcom.rc "/dev/felica               0660    mfc   system" "/dev/felica               0666    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_pon           0660    mfc   system" "/dev/felica_pon           0666    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_cen           0660    mfc   felicalock" "/dev/felica_cen           0666    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_rfs           0440    mfc   system" "/dev/felica_rfs           0444    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_rws           0660    mfc   system" "/dev/felica_rws           0666    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_ant           0660    mfc   system" "/dev/felica_ant           0666    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_int_poll      0400    mfc   system" "/dev/felica_int_poll      0400    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_uid           0220    mfc   system" "/dev/felica_uid           0222    root   system";
+replace_line ueventd.qcom.rc "/dev/felica_uicc          0660    mfc   system" "/dev/felica_uicc          0666    root   system";
 
 ############### Ramdisk customization end ###############
 
