@@ -1385,12 +1385,12 @@ static const struct i2c_device_id felica_i2c_idtable[] =
 MODULE_DEVICE_TABLE(i2c, felica_i2c_idtable);
 
 #if defined(CONFIG_ARCH_MSM8974) || defined(CONFIG_ARCH_MSM8974PRO)
-#if defined(CONFIG_MACH_HLTEDCM) || defined(CONFIG_MACH_HLTEKDI) || defined(CONFIG_MACH_JS01LTEDCM)
-static struct of_device_id felica_i2c_match_table[] =
-{
+#if defined(CONFIG_MACH_HLTEDCM)	|| defined(CONFIG_MACH_HLTEKDI) || defined(CONFIG_MACH_JS01LTEDCM)
+static struct of_device_id felica_i2c_match_table[] = {
 	{ .compatible = "felica,felica_irq",},
 	{ },
 };
+
 #else
 static struct of_device_id felica_i2c_match_table[] = 
 {
@@ -1482,6 +1482,7 @@ static int felica_i2c_remove(struct i2c_client *client)
  ******************************************************************************/
 
 /* character device definition */
+static struct felica_sem_data *cen_sem;
 static dev_t devid_felica_cen;
 static struct cdev cdev_felica_cen;
 static const struct file_operations fops_felica_cen = {
@@ -1530,6 +1531,15 @@ static void felica_cen_init(void)
 		return;
 	}
 
+	cen_sem = kmalloc(sizeof(struct felica_sem_data), GFP_KERNEL);
+	if (!cen_sem) {
+		cdev_del(&cdev_felica_cen);
+		unregister_chrdev_region(devid_felica_cen, FELICA_MINOR_COUNT);
+		FELICA_PR_ERR(" %s ERROR(cen_sem malloc)", __func__);
+		return;
+	}
+	sema_init(&cen_sem->felica_sem, 1);
+    
 	FELICA_PR_DBG(" %s END, major=[%d], minor=[%d]", __func__,
 			 MAJOR(devid_felica_cen), MINOR(devid_felica_cen));
 }
@@ -1541,6 +1551,7 @@ static void felica_cen_exit(void)
 {
 	FELICA_PR_DBG(" %s START", __func__);
 
+	kfree(cen_sem);
 	device_destroy(felica_class, devid_felica_cen);
 	cdev_del(&cdev_felica_cen);
 	unregister_chrdev_region(devid_felica_cen, FELICA_MINOR_COUNT);
@@ -1649,6 +1660,8 @@ static ssize_t felica_cen_read(struct file *file, char __user *buf, \
 	unsigned char read_buff = 0;
 	struct i2c_msg read_msgs[2];
 
+	down(&cen_sem->felica_sem);
+
 	read_msgs[0].flags = gread_msgs[0].flags;
 	read_msgs[0].len = gread_msgs[0].len;
 	read_msgs[1].flags = gread_msgs[1].flags;
@@ -1661,20 +1674,23 @@ static ssize_t felica_cen_read(struct file *file, char __user *buf, \
 
 	if (felica_i2c_client == NULL) {
 		FELICA_PR_ERR(" felica_i2c_client is NULL %s -EIO",__func__);
-		return -EIO;
+	    up(&cen_sem->felica_sem);
+	    return -EIO;
 	}
 
 	ret = i2c_transfer(felica_i2c_client->adapter, &read_msgs[0], 1);
 	if (ret < 0) {
 		FELICA_PR_ERR(" %s ERROR(i2c_transfer[0]), ret=[%d]",
 			       __func__, ret);
-		return -EIO;
+	    up(&cen_sem->felica_sem);
+	    return -EIO;
 	}
 	ret = i2c_transfer(felica_i2c_client->adapter, &read_msgs[1], 1);
 	if (ret < 0) {
 		FELICA_PR_ERR(" %s ERROR(i2c_transfer[1]), ret=[%d]",
 			       __func__, ret);
-		return -EIO;
+	    up(&cen_sem->felica_sem);
+	    return -EIO;
 	}
 
 	read_buff &= FELICA_CONTROL_LOCK_MASK;
@@ -1689,10 +1705,12 @@ static ssize_t felica_cen_read(struct file *file, char __user *buf, \
 	if (ret != 0) {
 		FELICA_PR_ERR(" %s ERROR(copy_to_user), ret=[%d]",
 			       __func__, ret);
-		return -EFAULT;
+	    up(&cen_sem->felica_sem);
+	    return -EFAULT;
 	}
 	*ppos += 1;
 
+	up(&cen_sem->felica_sem);
 	return FELICA_CEN_DATA_LEN;
 }
 
@@ -1706,8 +1724,11 @@ static ssize_t felica_cen_write(struct file *file, const char __user *data,
 	int ret;
 	unsigned char write_buff[2];
 
+	down(&cen_sem->felica_sem);
+    
 	if (felica_i2c_client == NULL) {
 		FELICA_PR_ERR(" felica_i2c_client is NULL %s",__func__);
+	    up(&cen_sem->felica_sem);
 		return -EIO;
 	}
 
@@ -1719,6 +1740,7 @@ static ssize_t felica_cen_write(struct file *file, const char __user *data,
 	if (ret != 0) {
 		FELICA_PR_ERR(" %s ERROR(copy_from_user), ret=[%d]",
 			       __func__, ret);
+	    up(&cen_sem->felica_sem);
 		return -EFAULT;
 	}
 	if (cen == FELICA_CEN_UNLOCK) {
@@ -1732,12 +1754,14 @@ static ssize_t felica_cen_write(struct file *file, const char __user *data,
 	} else {
 		FELICA_PR_ERR(" %s ERROR(copy_from_user), cen=[%d]",
 			       __func__, cen);
+	    up(&cen_sem->felica_sem);
 		return -EINVAL;
 	}
 	ret = i2c_transfer(felica_i2c_client->adapter, gwrite_msgs, 1);
 	if (ret < 0) {
 		FELICA_PR_ERR(" %s ERROR(i2c_transfer), ret=[%d]",
 			       __func__, ret);
+	    up(&cen_sem->felica_sem);
 		return -EIO;
 	}
 #ifdef CONFIG_NFC_FELICA
@@ -1756,7 +1780,9 @@ static ssize_t felica_cen_write(struct file *file, const char __user *data,
 	}
 
 #endif
-	FELICA_PR_INFO(" %s END, g_cen_sts =%d, g_rfs_sts = %d", __func__, g_cen_sts, g_rfs_sts);
+
+    up(&cen_sem->felica_sem);
+    FELICA_PR_INFO(" %s END, g_cen_sts =%d, g_rfs_sts = %d", __func__, g_cen_sts, g_rfs_sts);
 	return FELICA_CEN_DATA_LEN;
 }
 
@@ -5448,6 +5474,8 @@ static ssize_t snfc_cen_read(struct file *file, char __user *buf, \
 	unsigned char read_buff = 0;
 	struct i2c_msg read_msgs[2];
 
+	down(&cen_sem->felica_sem);
+
 	read_msgs[0].flags = gread_msgs[0].flags;
 	read_msgs[0].len = gread_msgs[0].len;
 	read_msgs[1].flags = gread_msgs[1].flags;
@@ -5460,6 +5488,7 @@ static ssize_t snfc_cen_read(struct file *file, char __user *buf, \
 
 	if (felica_i2c_client == NULL) {
 		FELICA_PR_ERR(" felica_i2c_client is NULL %s -EIO",__func__);
+	    up(&cen_sem->felica_sem);
 		return -EIO;
 	}
 
@@ -5467,12 +5496,14 @@ static ssize_t snfc_cen_read(struct file *file, char __user *buf, \
 	if (ret < 0) {
 		FELICA_PR_ERR(" %s ERROR(i2c_transfer[0]), ret=[%d]",
 			       __func__, ret);
+	    up(&cen_sem->felica_sem);
 		return -EIO;
 	}
 	ret = i2c_transfer(felica_i2c_client->adapter, &read_msgs[1], 1);
 	if (ret < 0) {
 		FELICA_PR_ERR(" %s ERROR(i2c_transfer[1]), ret=[%d]",
 			       __func__, ret);
+	    up(&cen_sem->felica_sem);
 		return -EIO;
 	}
 
@@ -5488,10 +5519,12 @@ static ssize_t snfc_cen_read(struct file *file, char __user *buf, \
 	if (ret != 0) {
 		FELICA_PR_ERR(" %s ERROR(copy_to_user), ret=[%d]",
 			       __func__, ret);
+	    up(&cen_sem->felica_sem);
 		return -EFAULT;
 	}
 	*ppos += 1;
 
+    up(&cen_sem->felica_sem);
 	return SNFC_CEN_DATA_LEN;
 }
 
