@@ -148,6 +148,14 @@ enum dsi_lane_map_type {
 #define DSI_INTR_CMD_DMA_DONE_MASK	BIT(1)
 #define DSI_INTR_CMD_DMA_DONE		BIT(0)
 
+/* Update this if more interrupt masks are added in future chipsets */
+#define DSI_INTR_MASK_ALL       \
+                (DSI_INTR_ERROR_MASK | \
+                DSI_INTR_BTA_DONE_MASK | \
+                DSI_INTR_VIDEO_DONE_MASK | \
+                DSI_INTR_CMD_MDP_DONE_MASK | \
+                DSI_INTR_CMD_DMA_DONE_MASK)
+
 #define DSI_CMD_TRIGGER_NONE		0x0	/* mdp trigger */
 #define DSI_CMD_TRIGGER_TE		0x02
 #define DSI_CMD_TRIGGER_SW		0x04
@@ -259,7 +267,7 @@ enum {
 
 #define DSI_EV_PLL_UNLOCKED		0x0001
 #define DSI_EV_MDP_FIFO_UNDERFLOW	0x0002
-#define DSI_EV_DSI_FIFO_EMPTY		0x0003
+#define DSI_EV_DSI_FIFO_EMPTY		0x0004
 #define DSI_EV_MDP_BUSY_RELEASE		0x80000000
 
 struct mdss_dsi_ctrl_pdata {
@@ -341,6 +349,7 @@ struct mdss_dsi_ctrl_pdata {
 	int bklt_max;
 	int new_fps;
 	int pwm_enabled;
+	bool dmap_iommu_map;
 #if defined(CONFIG_CABC_TUNING_HX8394C)
 	int current_cabc_duty;
 #endif
@@ -375,6 +384,7 @@ struct mdss_dsi_ctrl_pdata {
 	struct dsi_panel_cmds video2cmd;
 	struct dsi_panel_cmds cmd2video;
 
+	struct mdss_util_intf *mdss_util;
 	struct dcs_cmd_list cmdlist;
 	struct completion dma_comp;
 	struct completion mdp_comp;

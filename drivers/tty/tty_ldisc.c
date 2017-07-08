@@ -410,6 +410,10 @@ EXPORT_SYMBOL_GPL(tty_ldisc_flush);
  *	prevent the ldisc driver from re-using stale information for
  *	the new ldisc instance.
  *
+ *	The line discipline-related tty_struct fields are reset to
+ *	prevent the ldisc driver from re-using stale information for
+ *	the new ldisc instance.
+ *
  *	Locking: takes termios_mutex
  */
 
@@ -732,6 +736,9 @@ static void tty_reset_termios(struct tty_struct *tty)
 	tty->termios->c_ispeed = tty_termios_input_baud_rate(tty->termios);
 	tty->termios->c_ospeed = tty_termios_baud_rate(tty->termios);
 	mutex_unlock(&tty->termios_mutex);
+	
+	tty->disc_data = NULL;
+	tty->receive_room = 0;
 }
 
 

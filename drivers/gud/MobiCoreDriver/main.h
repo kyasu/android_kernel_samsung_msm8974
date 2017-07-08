@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,7 +11,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #ifndef _MC_MAIN_H_
 #define _MC_MAIN_H_
 
@@ -71,8 +70,9 @@ struct mc_context {
 	/* isr event counter */
 	unsigned int		evt_counter;
 	atomic_t		isr_counter;
-	/* ever incrementing counter */
-	atomic_t		unique_counter;
+	/* ever incrementing counters */
+	atomic_t		buffer_counter;
+	atomic_t		instance_counter;
 	/* pointer to instance of daemon */
 	struct mc_instance	*daemon_inst;
 	/* pointer to instance of daemon */
@@ -112,8 +112,6 @@ struct mc_mcp_buffer {
 	struct mc_flags	flags;
 	uint32_t	rfu; /* MCP message buffer - ignore */
 };
-
-unsigned int get_unique_id(void);
 
 /* check if caller is MobiCore Daemon */
 static inline bool is_daemon(struct mc_instance *instance)

@@ -1577,6 +1577,7 @@ static void _detected(struct max77804k_muic_info *info, u32 new_state)
 int otg_attached = 0;
 #endif
 
+static int fboot_chk;
 static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 				       u8 status1, u8 status2)
 {
@@ -1636,14 +1637,7 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 		info->is_adc_open_prev = false;
 
 	if (adc1k) {
-#if defined(CONFIG_USBID_STANDARD_VER_01)
-#if !defined(CONFIG_MUIC_MAX77804K_SUPPORT_MHL_CABLE_DETECTION)
-		if (vbvolt) {
-			new_state = BIT(EXTCON_TA);
-			info->cable_name = EXTCON_UNDEFINED_CHARGER;
-		}
-#endif
-#else
+#if defined(CONFIG_MUIC_MAX77804K_SUPPORT_MHL_CABLE_DETECTION)
 	    /* 9th bit gets set for MHL cable. */
 		new_state = BIT(EXTCON_MHL);
 		info->cable_name = EXTCON_MHL;
@@ -1654,6 +1648,13 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 			new_state |= BIT(EXTCON_MHL_VB);
 			info->cable_name = EXTCON_MHL_VB;
 		}
+#else
+#if defined(CONFIG_USBID_STANDARD_VER_01)
+		if (vbvolt) {
+			new_state = BIT(EXTCON_TA);
+			info->cable_name = EXTCON_UNDEFINED_CHARGER;
+		}
+#endif
 #endif
 		goto __found_cable;
 	}
@@ -1733,8 +1734,9 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 		/* Call Lan Hub handler here */
 		if (!max77804k_muic_set_adcmode(info, ADC_ALWAYS))
 			msleep(50);
-		pr_info("%s:LANHUB+TA Detected\n",__func__);
+		pr_info("%s: LANHUB+TA Detected\n",__func__);
 
+		pr_info("%s: Pre state %x \n", __func__, info->pre_state);
 		lanhub_otg_connected = true;
 		if(info->lanhub_ta_status == true)
 		{
@@ -1742,13 +1744,18 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 			goto __found_cable;
 		}
 
-		if ((info->pre_state == ADC_OPEN) && (!chgtyp)) {
+		if ((info->pre_state == ADC_OPEN) && ((!chgtyp) || fboot_chk)) {
 			pr_info("%s:LANHUB+TA Attached Directly\n",__func__);
 			sec_otg_notify(HNOTIFY_ID);
 			new_state = (BIT(EXTCON_USB_HOST) | BIT(EXTCON_LANHUB_TA));
+			fboot_chk = 0;
 		} else if(info->pre_state == ADC_GND) {
 			new_state = BIT(EXTCON_LANHUB_TA);
 			pr_info("%s:LANHUB to LANHUB+TA Change\n",__func__);
+		} else if((info->pre_state == ADC_OPEN) && chgtyp == 0x1) {
+			new_state = pre_state | BIT(EXTCON_LANHUB_TA);
+			pr_info("%s:LANHUB to LANHUB+TA Change after direct \n", __func__);
+			muic_otg_control(0);
 		}
 		info->curr_state = ADC_LANHUB;
 		info->lanhub_ta_status = true;
@@ -1870,10 +1877,15 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 #endif
 	case ADC_CHARGING_CABLE:
 #if defined(CONFIG_USBID_STANDARD_VER_01)
+#if defined(CONFIG_MUIC_SUPPORT_CHARGING_CABLE)
+		new_state = BIT(EXTCON_CHARGING_CABLE);
+		info->cable_name = EXTCON_CHARGING_CABLE;
+#else
 		if (vbvolt) {
 			new_state = BIT(EXTCON_TA);
 			info->cable_name = EXTCON_UNDEFINED_CHARGER;
 		}
+#endif
 #else
 		new_state = BIT(EXTCON_CHARGING_CABLE);
 		info->cable_name = EXTCON_CHARGING_CABLE;
@@ -1895,6 +1907,11 @@ static int max77804k_muic_handle_attach(struct max77804k_muic_info *info,
 	case ADC_OPEN:
 #if defined (CONFIG_MUIC_MAX77804K_SUPPORT_LANHUB)
 		info->curr_state = ADC_OPEN;
+		if (pre_state == 0x4000002) /*4 is for EXTCON_TA 2 for OTG*/
+		{
+			sec_otg_notify(HNOTIFY_ID_PULL);
+			info->edev->state = 0x0;
+		}
 #endif
 		info->is_adc_open_prev = true;
 		switch (chgtyp) {
@@ -2139,6 +2156,7 @@ static int max77804k_muic_irq_init(struct max77804k_muic_info *info)
 	REQUEST_IRQ(info->irq_chgtype, "muic-chgtype");
 	REQUEST_IRQ(info->irq_vbvolt, "muic-vbvolt");
 
+	fboot_chk = 1;
 	dev_info(info->dev, "adc:%d chgtype:%d vbvolt:%d",
 		info->irq_adc, info->irq_chgtype, info->irq_vbvolt);
 

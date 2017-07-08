@@ -810,7 +810,7 @@ static struct msm_gpiomux_config msm_sensors_configs[] __initdata = {
 		},
 	},
 #endif
-
+	
 #if defined (CONFIG_MACH_CHAGALL_KDI)
 	{
 		.gpio      = 83,		/* BLSP11 QUP I2C_DAT */
@@ -879,26 +879,6 @@ static struct msm_gpiomux_config msm_sensors_configs[] __initdata = {
 		.settings = {
 			[GPIOMUX_ACTIVE]    = &acc_sensor_cfg,
 			[GPIOMUX_SUSPENDED] = &acc_sensor_cfg,
-		},
-	},
-	{
-		.gpio = 111,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[0],
-		},
-	},
-	{
-		.gpio =  131,  /*WLAN_COEX_TX*/
-		.settings = {
-			[GPIOMUX_ACTIVE] =  &gpio_suspend_config[3],
-			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[3],
-		},
-	},
-	{
-		.gpio =  119,  /*IF_CON_SENSE_1P8*/
-		.settings = {
-			[GPIOMUX_ACTIVE] =  &gpio_suspend_config[0],        /* IN-NP */
-			[GPIOMUX_SUSPENDED] = &gpio_suspend_config[0],  /* IN-NP */
 		},
 	},
 #endif
@@ -1592,7 +1572,7 @@ static struct msm_gpiomux_config msm_sensor_configs[] __initdata = {
 		},
 	},
 	{
-		.gpio = 55, /* CIS_SPI_CSN */
+		.gpio = 55, /* CIS_SPI_MISO */
 		.settings = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_config,
 		},

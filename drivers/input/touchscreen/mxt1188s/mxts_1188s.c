@@ -2592,23 +2592,56 @@ out:
 #endif
 }
 
+#ifdef CHECK_IN_BOOTLOADER
+int mxt_check_chip_variant(struct mxt_data *data)
+{
+	struct i2c_client *client = data->client;
+	u8 buf[3];
+
+	if (i2c_master_recv(data->client_boot, buf, sizeof(buf)) != sizeof(buf)) {
+		dev_err(&client->dev, "%s: i2c recv failed\n", __func__);
+		return 0;
+	}
+	dev_err(&client->dev, "Bootloader ID:%d Version:%d", buf[1], buf[2]);
+
+	if(buf[1] == MXT_CHECK_1664S_BOOT_ID){
+		dev_err(&client->dev, "found 1664S bootloader\n");
+		data->info.variant_id = 0;
+		return 1;
+	}else if(buf[1] == MXT_CHECK_1188S1_BOOT_ID){
+		dev_err(&client->dev, "found 1188S1 bootloader\n");
+		data->info.variant_id = MXT_CHECK_1188S1_BOOT_ID;
+		return 1;
+	}
+
+	return 0;
+}
+#endif
+
 static int __devinit mxt_touch_init(struct mxt_data *data, bool nowait)
 {
 	struct i2c_client *client = data->client;
 	int ret = 0;
-#if USE_DUAL_X_MODE
+#if defined(CONFIG_SEC_MATISSEWIFI_COMMON)
         const char *firmware_name;
 	ret = mxt_read_id_info(data);
 
 	if (ret) {
+#ifdef CHECK_IN_BOOTLOADER
+		if(mxt_check_chip_variant(data)){
+			dev_err(&client->dev, "IC is IC bootloader (normal x)\n");
+		}else
+#endif
+		{
 		dev_err(&client->dev, "Failed to read Variant Id\n");
 		goto out;
+	}
 	}
 #endif
 #if defined(CONFIG_MACH_LT03EUR) || defined(CONFIG_MACH_LT03SKT) || defined(CONFIG_MACH_LT03KTT) || defined(CONFIG_MACH_LT03LGT)
 	const char *firmware_name = data->pdata->firmware_name ?: MXT_N_PROJECT_FIRMWARE_NAME;
 #else
-#if !(USE_DUAL_X_MODE)
+#if !defined(CONFIG_SEC_MATISSEWIFI_COMMON)
 	const char *firmware_name = data->pdata->firmware_name ?: MXT_V_PROJECT_FIRMWARE_NAME;
 #else
 	if(data->info.variant_id != 0){

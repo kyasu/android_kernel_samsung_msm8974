@@ -1511,7 +1511,8 @@ extern unsigned int system_rev;
 #if defined(CONFIG_MACH_KLTE_JPN)
 #define UART_DOWNLOAD_WAKEUP_HWREV 7
 #elif defined(CONFIG_MACH_KACTIVELTE_EUR) || defined(CONFIG_MACH_KACTIVELTE_ATT) || defined(CONFIG_MACH_KSPORTSLTE_SPR) \
-	|| defined(CONFIG_MACH_KACTIVELTE_SKT) || defined(CONFIG_SEC_S_PROJECT) || defined(CONFIG_MACH_KACTIVELTE_CAN) || defined(CONFIG_MACH_KACTIVELTE_DCM)
+	|| defined(CONFIG_MACH_KACTIVELTE_SKT) || defined(CONFIG_SEC_S_PROJECT) || defined(CONFIG_MACH_KACTIVELTE_CAN) \
+	|| defined(CONFIG_MACH_KACTIVELTE_DCM) || defined(CONFIG_MACH_KACTIVELTE_KOR)
 #define UART_DOWNLOAD_WAKEUP_HWREV 0
 #else
 #define UART_DOWNLOAD_WAKEUP_HWREV 6 /* HW rev0.7 */
@@ -4817,7 +4818,11 @@ int es705_core_probe(struct device *dev)
 #endif /* CONFIG_ARCH_MSM8226 */
 
 #ifdef ES705_VDDCORE_MAX77826
+#if defined(CONFIG_MACH_KACTIVELTE_KOR)
+	es705_vdd_core = regulator_get(NULL, "max77826_ldo3");
+#else
 	es705_vdd_core = regulator_get(NULL, "max77826_ldo1");
+#endif
 	if (IS_ERR(es705_vdd_core)) {
 		dev_err(dev, "%s(): es705 VDD CORE regulator_get fail\n", __func__);
 		return rc;

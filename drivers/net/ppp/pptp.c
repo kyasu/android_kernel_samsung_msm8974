@@ -423,6 +423,9 @@ static int pptp_bind(struct socket *sock, struct sockaddr *uservaddr,
 	if (sockaddr_len < sizeof(struct sockaddr_pppox))
 		return -EINVAL;
 
+	if (sockaddr_len < sizeof(struct sockaddr_pppox))
+		return -EINVAL;
+
 	lock_sock(sk);
 
 	opt->src_addr = sp->sa_addr.pptp;
@@ -443,6 +446,9 @@ static int pptp_connect(struct socket *sock, struct sockaddr *uservaddr,
 	struct rtable *rt;
 	struct flowi4 fl4;
 	int error = 0;
+
+	if (sockaddr_len < sizeof(struct sockaddr_pppox))
+		return -EINVAL;
 
 	if (sockaddr_len < sizeof(struct sockaddr_pppox))
 		return -EINVAL;

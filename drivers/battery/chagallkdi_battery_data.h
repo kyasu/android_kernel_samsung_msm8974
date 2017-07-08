@@ -22,50 +22,77 @@
 static struct battery_data_t samsung_battery_data[] = {
 	/* SDI battery data (High voltage 4.35V) */
 	{
-		.RCOMP0 = 0x5D,
-		.RCOMP_charging = 0x5D,
-		.temp_cohot = -175,
-		.temp_cocold = -5825,
+		.RCOMP0 = 0x80,
+		.RCOMP_charging = 0x9A,
+		.temp_cohot = -762,
+		.temp_cocold = -5562,
 		.is_using_model_data = true,
 		.type_str = "SDI",
 	}
 };
 
-#define CAPACITY_MAX			992
+#define CAPACITY_MAX		970
 #define CAPACITY_MAX_MARGIN	50
-#define CAPACITY_MIN			0
+#define CAPACITY_MIN		0
 
 static sec_bat_adc_table_data_t temp_table[] = {
-        {1100,  350},
-        {668,   350},
-        {657,   350},
-        {613,   350},
-        {556,   325},
-        {486,   325},
-        {402,   325},
-        {306,   300},
-        {199,   300},
-        {90,    300},
-        {-3,    300},
-        {-93,   290},
-        {-161,  290},
-        {-350,  290},
+	{24947, 800},
+	{24958, 750},
+	{24970, 700},
+	{25059, 650},
+	{25242, 600},
+	{25342, 550},
+	{25431, 500},
+	{25563, 450},
+	{25709, 400},
+	{25891, 350},
+	{26104, 300},
+	{26373, 250},
+	{26685, 200},
+	{27064, 150},
+	{27526, 100},
+	{28060, 50},
+	{28645, 0},
+	{29436, -50},
+	{30294, -100},
+	{31378, -150},
+	{32390, -200},
 };
 
 static sec_bat_adc_table_data_t chg_temp_table[] = {
 	{0, 0},
 };
-#define TEMP_HIGH_THRESHOLD_EVENT	567
-#define TEMP_HIGH_RECOVERY_EVENT	480
-#define TEMP_LOW_THRESHOLD_EVENT	-50
-#define TEMP_LOW_RECOVERY_EVENT		0
-#define TEMP_HIGH_THRESHOLD_NORMAL	567
-#define TEMP_HIGH_RECOVERY_NORMAL	480
-#define TEMP_LOW_THRESHOLD_NORMAL	-50
-#define TEMP_LOW_RECOVERY_NORMAL	0
-#define TEMP_HIGH_THRESHOLD_LPM		520
-#define TEMP_HIGH_RECOVERY_LPM		472
-#define TEMP_LOW_THRESHOLD_LPM		-20
-#define TEMP_LOW_RECOVERY_LPM		0
+
+#define TEMP_HIGH_THRESHOLD_EVENT       560
+#define TEMP_HIGH_RECOVERY_EVENT        480
+#define TEMP_LOW_THRESHOLD_EVENT        -50
+#define TEMP_LOW_RECOVERY_EVENT         0
+#define TEMP_HIGH_THRESHOLD_NORMAL      560
+#define TEMP_HIGH_RECOVERY_NORMAL       480
+#define TEMP_LOW_THRESHOLD_NORMAL       -50
+#define TEMP_LOW_RECOVERY_NORMAL        0
+#define TEMP_HIGH_THRESHOLD_LPM         560
+#define TEMP_HIGH_RECOVERY_LPM          480
+#define TEMP_LOW_THRESHOLD_LPM          10
+#define TEMP_LOW_RECOVERY_LPM           25
+
+#define TEMP_HIGHLIMIT_THRESHOLD_EVENT          800
+#define TEMP_HIGHLIMIT_RECOVERY_EVENT           750
+#define TEMP_HIGHLIMIT_THRESHOLD_NORMAL         800
+#define TEMP_HIGHLIMIT_RECOVERY_NORMAL          750
+#define TEMP_HIGHLIMIT_THRESHOLD_LPM            800
+#define TEMP_HIGHLIMIT_RECOVERY_LPM             750
+
+#if defined(CONFIG_BATTERY_SWELLING)
+#define BATT_SWELLING_HIGH_TEMP_BLOCK			450
+#define BATT_SWELLING_HIGH_TEMP_RECOV			400
+#define BATT_SWELLING_LOW_TEMP_BLOCK			100
+#define BATT_SWELLING_LOW_TEMP_RECOV			150
+#define BATT_SWELLING_HIGH_CHG_CURRENT			0
+#define BATT_SWELLING_LOW_CHG_CURRENT			0
+#define BATT_SWELLING_DROP_FLOAT_VOLTAGE		4200
+#define BATT_SWELLING_HIGH_RECHG_VOLTAGE		4150
+#define BATT_SWELLING_LOW_RECHG_VOLTAGE			4050
+#endif
 
 #endif /* __SEC_BATTERY_DATA_H */

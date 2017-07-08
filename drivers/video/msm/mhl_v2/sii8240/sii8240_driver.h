@@ -1011,6 +1011,7 @@ struct sii8240_data {
 	struct work_struct				mhl_link_monitor_work;
 	bool ckdt_stable;
 #endif
+	bool scdt_state;
 #ifdef SFEATURE_UNSTABLE_SOURCE_WA
 	struct work_struct				avi_check_work;
 #endif

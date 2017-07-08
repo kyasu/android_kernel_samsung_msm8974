@@ -763,11 +763,9 @@ int mdp3_iommu_attach(int context)
 	if (context >= MDP3_IOMMU_CTX_MAX)
 		return -EINVAL;
 
-	mutex_lock(&mdp3_res->iommu_lock);
 	context_map = mdp3_res->iommu_contexts + context;
 	if (context_map->attached) {
 		pr_warn("mdp iommu already attached\n");
-		mutex_unlock(&mdp3_res->iommu_lock);
 		return 0;
 	}
 
@@ -776,7 +774,6 @@ int mdp3_iommu_attach(int context)
 	iommu_attach_device(domain_map->domain, context_map->ctx);
 
 	context_map->attached = true;
-	mutex_unlock(&mdp3_res->iommu_lock);
 	return 0;
 }
 
@@ -789,11 +786,9 @@ int mdp3_iommu_dettach(int context)
 		context >= MDP3_IOMMU_CTX_MAX)
 		return -EINVAL;
 
-	mutex_lock(&mdp3_res->iommu_lock);
 	context_map = mdp3_res->iommu_contexts + context;
 	if (!context_map->attached) {
 		pr_warn("mdp iommu not attached\n");
-		mutex_unlock(&mdp3_res->iommu_lock);
 		return 0;
 	}
 
@@ -801,7 +796,6 @@ int mdp3_iommu_dettach(int context)
 	iommu_detach_device(domain_map->domain, context_map->ctx);
 	context_map->attached = false;
 
-	mutex_unlock(&mdp3_res->iommu_lock);
 	return 0;
 }
 
@@ -966,7 +960,7 @@ static int mdp3_res_init(void)
 
 	mdp3_res->ion_client = msm_ion_client_create(-1, mdp3_res->pdev->name);
 	if (IS_ERR_OR_NULL(mdp3_res->ion_client)) {
-		pr_err("msm_ion_client_create() return error (%p)\n",
+		pr_err("msm_ion_client_create() return error (%pK)\n",
 				mdp3_res->ion_client);
 		mdp3_res->ion_client = NULL;
 		return -EINVAL;
@@ -990,8 +984,15 @@ static int mdp3_res_init(void)
 
 static void mdp3_res_deinit(void)
 {
+	int i;
+
 	mdp3_bus_scale_unregister();
-	mdp3_iommu_dettach(MDP3_IOMMU_CTX_DMA_0);
+
+	mutex_lock(&mdp3_res->iommu_lock);
+	for (i = 0; i < MDP3_IOMMU_CTX_MAX; i++)
+		mdp3_iommu_dettach(i);
+	mutex_unlock(&mdp3_res->iommu_lock);
+
 	mdp3_iommu_deinit();
 
 	if (!IS_ERR_OR_NULL(mdp3_res->ion_client))
@@ -1133,7 +1134,7 @@ static int mdp3_parse_bootarg(struct platform_device *pdev)
 	cmd_len = strlen(cmd_line);
 	disp_idx = strnstr(cmd_line, "mdss_mdp.panel=", cmd_len);
 	if (!disp_idx) {
-		pr_err("%s:%d:cmdline panel not set disp_idx=[%p]\n",
+		pr_err("%s:%d:cmdline panel not set disp_idx=[%pK]\n",
 				__func__, __LINE__, disp_idx);
 		memset(panel_name, 0x00, MDSS_MAX_PANEL_LEN);
 		*intf_type = MDSS_PANEL_INTF_INVALID;
@@ -1153,7 +1154,7 @@ static int mdp3_parse_bootarg(struct platform_device *pdev)
 	}
 
 	if (end_idx <= disp_idx) {
-		pr_err("%s:%d:cmdline pan incorrect end=[%p] disp=[%p]\n",
+		pr_err("%s:%d:cmdline pan incorrect end=[%pK] disp=[%pK]\n",
 			__func__, __LINE__, end_idx, disp_idx);
 		memset(panel_name, 0x00, MDSS_MAX_PANEL_LEN);
 		*intf_type = MDSS_PANEL_INTF_INVALID;
@@ -1394,7 +1395,7 @@ void mdp3_unmap_iommu(struct ion_client *client, struct ion_handle *handle)
 	mutex_lock(&mdp3_res->iommu_lock);
 	meta = mdp3_iommu_meta_lookup(table);
 	if (!meta) {
-		WARN(1, "%s: buffer was never mapped for %p\n", __func__,
+		WARN(1, "%s: buffer was never mapped for %pK\n", __func__,
 				handle);
 		mutex_unlock(&mdp3_res->iommu_lock);
 		goto out;
@@ -1422,7 +1423,7 @@ static void mdp3_iommu_meta_add(struct mdp3_iommu_meta *meta)
 		} else if (meta->table > entry->table) {
 			p = &(*p)->rb_right;
 		} else {
-			pr_err("%s: handle %p already exists\n", __func__,
+			pr_err("%s: handle %pK already exists\n", __func__,
 				entry->handle);
 			BUG();
 		}
@@ -1483,7 +1484,7 @@ static int mdp3_iommu_map_iommu(struct mdp3_iommu_meta *meta,
 	ret = iommu_map_range(domain, meta->iova_addr + padding,
 			table->sgl, size, prot);
 	if (ret) {
-		pr_err("%s: could not map %lx in domain %p\n",
+		pr_err("%s: could not map %lx in domain %pK\n",
 			__func__, meta->iova_addr, domain);
 			unmap_size = padding;
 		goto out2;
@@ -1608,12 +1609,12 @@ int mdp3_self_map_iommu(struct ion_client *client, struct ion_handle *handle,
 		}
 	} else {
 		if (iommu_meta->flags != iommu_flags) {
-			pr_err("%s: handle %p is already mapped with diff flag\n",
+			pr_err("%s: handle %pK is already mapped with diff flag\n",
 				__func__, handle);
 			ret = -EINVAL;
 			goto out_unlock;
 		} else if (iommu_meta->mapped_size != iova_length) {
-			pr_err("%s: handle %p is already mapped with diff len\n",
+			pr_err("%s: handle %pK is already mapped with diff len\n",
 				__func__, handle);
 			ret = -EINVAL;
 			goto out_unlock;
@@ -1731,7 +1732,7 @@ done:
 		data->addr += img->offset;
 		data->len -= img->offset;
 
-		pr_debug("mem=%d ihdl=%p buf=0x%x len=0x%x\n", img->memory_id,
+		pr_debug("mem=%d ihdl=%pK buf=0x%x len=0x%x\n", img->memory_id,
 			 data->srcp_ihdl, data->addr, data->len);
 	} else {
 		mdp3_put_img(data, client);
@@ -1745,12 +1746,14 @@ int mdp3_iommu_enable(int client)
 {
 	int rc;
 
+	mutex_lock(&mdp3_res->iommu_lock);
 	if (client == MDP3_CLIENT_DMA_P) {
 		rc = mdp3_iommu_attach(MDP3_IOMMU_CTX_DMA_0);
 	} else {
 		rc = mdp3_iommu_attach(MDP3_IOMMU_CTX_PPP_0);
 		rc |= mdp3_iommu_attach(MDP3_IOMMU_CTX_PPP_1);
 	}
+	mutex_unlock(&mdp3_res->iommu_lock);
 
 	return rc;
 }
@@ -1759,12 +1762,14 @@ int mdp3_iommu_disable(int client)
 {
 	int rc;
 
+	mutex_lock(&mdp3_res->iommu_lock);
 	if (client == MDP3_CLIENT_DMA_P) {
 		rc = mdp3_iommu_dettach(MDP3_IOMMU_CTX_DMA_0);
 	} else {
 		rc = mdp3_iommu_dettach(MDP3_IOMMU_CTX_PPP_0);
 		rc |= mdp3_iommu_dettach(MDP3_IOMMU_CTX_PPP_1);
 	}
+	mutex_unlock(&mdp3_res->iommu_lock);
 
 	return rc;
 }
@@ -1861,7 +1866,7 @@ static int mdp3_alloc(struct msm_fb_data_type *mfd)
 		pr_err("fail to map to IOMMU %d\n", ret);
 		return ret;
 	}
-	pr_info("allocating %u bytes at %p (%lx phys) for fb %d\n",
+	pr_info("allocating %u bytes at %pK (%lx phys) for fb %d\n",
 		size, virt, phys, mfd->index);
 
 	mfd->fbi->screen_base = virt;

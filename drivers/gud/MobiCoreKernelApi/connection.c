@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -86,7 +86,7 @@ size_t connection_read_data_msg(struct connection *conn, void *buffer,
 		kfree_skb(conn->skb);
 		conn->skb = NULL;
 	}
-	MCDRV_DBG_VERBOSE(mc_kapi, "read %u",  ret);
+	MCDRV_DBG_VERBOSE(mc_kapi, "read %zu",  ret);
 	return ret;
 }
 
@@ -161,17 +161,16 @@ size_t connection_write_data(struct connection *conn, void *buffer,
 				NLMSG_LENGTH(len), NLM_F_REQUEST);
 		if (!nlh) {
 			ret = -1;
+			kfree_skb(skb);
 			break;
 		}
 		memcpy(NLMSG_DATA(nlh), buffer, len);
 
+		/* netlink_unicast frees skb */
 		netlink_unicast(conn->socket_descriptor, skb,
 				conn->peer_pid, MSG_DONTWAIT);
 		ret = len;
 	} while (0);
-
-	if (!ret && skb != NULL)
-		kfree_skb(skb);
 
 	return ret;
 }

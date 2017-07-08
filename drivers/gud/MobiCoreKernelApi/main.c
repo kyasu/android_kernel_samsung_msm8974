@@ -96,16 +96,12 @@ void mcapi_remove_connection(uint32_t seq)
 static int mcapi_process(struct sk_buff *skb, struct nlmsghdr *nlh)
 {
 	struct connection *c;
-	int length;
 	int seq;
-	pid_t pid;
 	int ret;
 
-	pid = nlh->nlmsg_pid;
-	length = nlh->nlmsg_len;
 	seq = nlh->nlmsg_seq;
 	MCDRV_DBG_VERBOSE(mc_kapi, "nlmsg len %d type %d pid 0x%X seq %d\n",
-			  length, nlh->nlmsg_type, pid, seq);
+			  nlh->nlmsg_len, nlh->nlmsg_type, nlh->nlmsg_pid, seq);
 	do {
 		c = mcapi_find_connection(seq);
 		if (!c) {
@@ -153,7 +149,7 @@ static int __init mcapi_init(void)
 
 	dev_info(mc_kapi, "Mobicore API module initialized!\n");
 
-	mod_ctx = kzalloc(sizeof(struct mc_kernelapi_ctx), GFP_KERNEL);
+	mod_ctx = kzalloc(sizeof(*mod_ctx), GFP_KERNEL);
 	if (mod_ctx == NULL) {
 		MCDRV_DBG_ERROR(mc_kapi, "Allocation failure");
 		return -ENOMEM;
@@ -173,6 +169,7 @@ static int __init mcapi_init(void)
 	if (!mod_ctx->sk) {
 		MCDRV_ERROR(mc_kapi, "register of receive handler failed");
 		kfree(mod_ctx);
+		mod_ctx = NULL;
 		return -EFAULT;
 	}
 
@@ -195,6 +192,6 @@ static void __exit mcapi_exit(void)
 module_init(mcapi_init);
 module_exit(mcapi_exit);
 
-MODULE_AUTHOR("Giesecke & Devrient GmbH");
+MODULE_AUTHOR("Trustonic Limited");
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MobiCore API driver");

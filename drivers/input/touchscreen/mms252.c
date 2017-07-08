@@ -57,8 +57,6 @@
 #define MAX_FINGERS		10
 #define MAX_WIDTH		30
 #define MAX_PRESSURE		255
-#define MAX_ANGLE		90
-#define MIN_ANGLE		-90
 
 /* Registers */
 #define MMS_MODE_CONTROL	0x01
@@ -171,7 +169,7 @@ static int tsp_power_enabled;
 #if defined(CONFIG_MACH_MILLET3G_CHN_OPEN)
 #define FW_VERSION_DATE "140415"
 #endif
-#define FW_VERSION_EL 0x16
+#define FW_VERSION_EL 0x18
 
 #define MAX_FW_PATH 255
 #define TSP_FW_FILENAME "melfas_fw.bin"
@@ -834,8 +832,6 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 			ABS_MT_TOUCH_MAJOR, tmp[6]);
 		input_report_abs(info->input_dev,
 			ABS_MT_TOUCH_MINOR, tmp[7]);
-		input_report_abs(info->input_dev,
-			ABS_MT_ANGLE, angle);
 		input_report_abs(info->input_dev,
 			ABS_MT_PALM, palm);
 #ifdef CONFIG_SAMSUNG_PRODUCT_SHIP
@@ -3828,8 +3824,6 @@ static int __devinit mms_ts_probe(struct i2c_client *client,
 				0, (info->max_y)-1, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_WIDTH_MAJOR,
 				0, MAX_WIDTH, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_ANGLE,
-				MIN_ANGLE, MAX_ANGLE, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_PALM,
 				0, 1, 0, 0);
 #ifdef USE_OPEN_CLOSE
@@ -3952,6 +3946,12 @@ static int __devinit mms_ts_probe(struct i2c_client *client,
 	if (ret)
 		dev_err(&client->dev, "Failed to create sysfs group\n");
 
+	ret = sysfs_create_link(&fac_dev_ts->kobj, &info->input_dev->dev.kobj, "input");
+	if (ret < 0) {
+		dev_err(&client->dev,
+				"%s: Failed to create input symbolic link\n",
+				__func__);
+	}
 #endif
 	return 0;
 

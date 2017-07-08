@@ -626,6 +626,9 @@ static struct synaptics_rmi4_platform_data rmi4_platformdata = {
 	.fac_firmware_name = NULL,
 	.num_of_rx = NUM_RX,
 	.num_of_tx = NUM_TX,
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	.hsync_onoff = mdss_dsi_panel_hsync_onoff,
+#endif
 };
 
 static int touch_sleep_time;
@@ -3432,6 +3435,10 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
 
 		msleep(SYNAPTICS_HW_RESET_TIME);
 	} else {
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+		rmi4_data->board->hsync_onoff(false);
+#endif
+
 		synaptics_power_ctrl(rmi4_data,false);
 		
 		msleep(30);
@@ -3439,6 +3446,10 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
 		rmi4_data->current_page = MASK_8BIT;
 
 		msleep(SYNAPTICS_HW_RESET_TIME);
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+		rmi4_data->board->hsync_onoff(true);
+#endif
 
 		retval = synaptics_rmi4_f54_set_control(rmi4_data);
 		if (retval < 0)
@@ -3480,10 +3491,18 @@ static void synaptics_rmi4_reboot_work(struct work_struct *work)
 	dev_err(&rmi4_data->i2c_client->dev,
 			": Tsp Reboot(%d) by pattern tracking\n",ghosttouchcount);
 
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(false);
+#endif
+
 	synaptics_power_ctrl(rmi4_data,false);
 	msleep(50);
 	synaptics_power_ctrl(rmi4_data,true);
 	msleep(SYNAPTICS_HW_RESET_TIME);
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(true);
+#endif
 
 	retval = synaptics_rmi4_f54_set_control(rmi4_data);
 	if (retval < 0)
@@ -3960,10 +3979,18 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 	}
 #endif
 
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(false);
+#endif
 	touch_sleep_time = SYNAPTICS_HW_RESET_TIME;
 
 	synaptics_power_ctrl(rmi4_data,true);
 	msleep(touch_sleep_time);
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(true);
+#endif
 
 	mutex_init(&(rmi4_data->rmi4_io_ctrl_mutex));
 	mutex_init(&(rmi4_data->rmi4_reset_mutex));
@@ -3986,8 +4013,16 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, rmi4_data);
 
 err_tsp_reboot:
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(false);
+#endif
+
 	synaptics_power_ctrl(rmi4_data,true);
 	msleep(SYNAPTICS_POWER_MARGIN_TIME);
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(true);
+#endif
 
 	retval = synaptics_rmi4_set_input_device(rmi4_data);
 	if (retval < 0) {
@@ -4284,12 +4319,20 @@ static int synaptics_rmi4_start_device(struct synaptics_rmi4_data *rmi4_data)
 		goto out;
 	}
 
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(false);
+#endif
+
 		synaptics_power_ctrl(rmi4_data,true);		
 	rmi4_data->current_page = MASK_8BIT;
 		rmi4_data->touch_stopped = false;
 
 	mdss_dsi_panel_touchsensing(true);
 	msleep(SYNAPTICS_HW_RESET_TIME);
+
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_PREVENT_HSYNC_LEAKAGE)
+	rmi4_data->board->hsync_onoff(true);
+#endif
 
 	retval = synaptics_rmi4_reinit_device(rmi4_data);
 	if (retval < 0) {

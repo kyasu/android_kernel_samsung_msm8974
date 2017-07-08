@@ -230,7 +230,7 @@
 #define NUM_KPDBL_LEDS			4
 #define KPDBL_MASTER_BIT_INDEX		0
 
-#if !defined(CONFIG_SEC_VIENNA_PROJECT) && !defined(CONFIG_SEC_V2_PROJECT) && !defined(CONFIG_SEC_LT03_PROJECT) && !defined(CONFIG_SEC_MONDRIAN_PROJECT) && !defined(CONFIG_SEC_K_PROJECT) && !defined(CONFIG_SEC_N2_PROJECT) && !defined(CONFIG_SEC_PICASSO_PROJECT) && !defined(CONFIG_SEC_KACTIVE_PROJECT)
+#if !defined(CONFIG_SEC_VIENNA_PROJECT) && !defined(CONFIG_SEC_V2_PROJECT) && !defined(CONFIG_SEC_LT03_PROJECT) && !defined(CONFIG_SEC_MONDRIAN_PROJECT) && !defined(CONFIG_SEC_K_PROJECT) && !defined(CONFIG_SEC_N2_PROJECT) && !defined(CONFIG_SEC_PICASSO_PROJECT) && !defined(CONFIG_SEC_KACTIVE_PROJECT) && !defined(CONFIG_MACH_KLIMT_LTE_DCM)
 #define SAMSUNG_LED_PATTERN 1
 #endif
 
@@ -1168,6 +1168,7 @@ static int qpnp_flash_regulator_operate(struct qpnp_led_data *led, bool on)
 		goto regulator_turn_off;
 
 	if (!regulator_on && !led->flash_cfg->flash_on) {
+#ifndef SAMSUNG_USE_EXTERNAL_CHARGER
 		for (i = 0; i < led->num_leds; i++) {
 			if (led_array[i].flash_cfg->flash_reg_get) {
 				if (led_array[i].flash_cfg->flash_wa_reg_get) {
@@ -1229,6 +1230,7 @@ static int qpnp_flash_regulator_operate(struct qpnp_led_data *led, bool on)
 			}
 			break;
 			}
+#endif
 	    for (i = 0; i < led->num_leds; i++) {
 #ifdef SAMSUNG_USE_EXTERNAL_CHARGER
 		qpnp_flash_reg_en(led, true);

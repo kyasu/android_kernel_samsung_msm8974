@@ -25,10 +25,20 @@
 
 #define ALPSIO_SET_MAGACTIVATE   _IOW(ALPSIO, 0, int)
 #define ALPSIO_SET_ACCACTIVATE   _IOW(ALPSIO, 1, int)
-#define ALPSIO_SET_DELAY         _IOW(ALPSIO, 2, int)
+#define ALPSIO_SET_DELAY         _IOW(ALPSIO, 2, int64_t)
 #define ALPSIO_ACT_SELF_TEST_A   _IOR(ALPSIO, 3, int)
 #define ALPSIO_ACT_SELF_TEST_B   _IOR(ALPSIO, 4, int)
 #define ALPSIO_REOPT_VAL         _IOW(ALPSIO, 5, int)
+
+enum {
+	SENSOR_NS_DELAY_FASTEST = 10000000,	/* 10msec */
+	SENSOR_NS_DELAY_NORMAL = 200000000,	/* 200msec */
+};
+
+enum {
+	SENSOR_MS_DELAY_FASTEST = 10,	/* 10msec */
+	SENSOR_MS_DELAY_NORMAL = 200,	/* 200msec */
+};
 
 //extern int accsns_get_acceleration_data(int *xyz);
 extern int hscd_get_magnetic_field_data(int *xyz);

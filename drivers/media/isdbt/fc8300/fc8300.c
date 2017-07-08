@@ -322,17 +322,13 @@ static void isdbt_gpio_init(void)
 	gpio_tlmm_config(GPIO_CFG(isdbt_pdata->gpio_en, GPIOMUX_FUNC_GPIO,
 						GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
 						GPIO_CFG_ENABLE);
-
-	gpio_tlmm_config(GPIO_CFG(isdbt_pdata->gpio_tsif_en, GPIOMUX_FUNC_GPIO,
-						GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
-						GPIO_CFG_ENABLE);
 #else
 	gpio_tlmm_config(GPIO_CFG(isdbt_pdata->gpio_en, GPIOMUX_FUNC_GPIO,
 						GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 						GPIO_CFG_ENABLE);
 #endif
 
-#if defined(CONFIG_MACH_CHAGALL_KDI) || defined(CONFIG_MACH_KLIMT_LTE_DCM)
+#ifdef CONFIG_MACH_CHAGALL_KDI
 	gpio_tlmm_config(GPIO_CFG(isdbt_pdata->gpio_rst, GPIOMUX_FUNC_GPIO,
 						GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 						GPIO_CFG_ENABLE);
@@ -1079,17 +1075,6 @@ static struct isdbt_platform_data *isdbt_populate_dt_pdata(struct device *dev)
 	} else {
 		pr_info("%s : isdbt-detect-gpio gpio_i2c_scl=%d\n", __func__, pdata->gpio_i2c_scl);
 	}
-
-#if defined(CONFIG_MACH_KLIMT_LTE_DCM)
-	pdata->gpio_tsif_en = of_get_named_gpio(dev->of_node, "qcom,isdb-gpio-tsif_en", 0);
-	if (pdata->gpio_tsif_en < 0)
-		of_property_read_u32(dev->of_node, "qcom,isdb-gpio-tsif_en", &pdata->gpio_tsif_en);
-	if (pdata->gpio_tsif_en < 0) {
-		pr_err("%s : can not find the isdbt-detect-gpio gpio_tsif_en in the dt\n", __func__);
-	} else {
-		pr_info("%s : isdbt-detect-gpio gpio_tsif_en=%d\n", __func__, pdata->gpio_tsif_en);
-	}
-#endif
 
 #ifdef CONFIG_ISDBT_F_TYPE_ANTENNA
 	pdata->gpio_tmm_sw = of_get_named_gpio(dev->of_node, "qcom,isdb-gpio-tmm_sw", 0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -88,9 +88,8 @@ EXPORT_SYMBOL(mobicore_allocate_wsm);
 struct mc_instance *mobicore_open(void)
 {
 	struct mc_instance *instance = mc_alloc_instance();
-	if(instance) {
+	if (instance)
 		instance->admin = true;
-	}
 	return instance;
 }
 EXPORT_SYMBOL(mobicore_open);

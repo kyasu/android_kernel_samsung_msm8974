@@ -1598,7 +1598,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	msd.ctrl_pdata = ctrl;
 	msd.mpd = pdata;
 
-	printk("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	printk("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 			get_min_lux_table(&(mpd.gamma_initial[2]),
 						GAMMA_SET_MAX);
@@ -1667,7 +1667,7 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 #endif
 #endif
 
-    printk("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+    printk("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	if (ctrl->off_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds);
@@ -1709,7 +1709,7 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		if (dchdr->dlen > len) {
 			pr_err("%s: dtsi cmd=%x error, len=%d",
 				__func__, dchdr->dtype, dchdr->dlen);
-			return -ENOMEM;
+			goto exit_free;
 		}
 		bp += sizeof(*dchdr);
 		len -= sizeof(*dchdr);
@@ -1721,16 +1721,13 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 	if (len != 0) {
 		pr_err("%s: dcs_cmd=%x len=%d error!",
 				__func__, buf[0], blen);
-		kfree(buf);
-		return -ENOMEM;
+		goto exit_free;
 	}
 
 	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
 						GFP_KERNEL);
-	if (!pcmds->cmds){
-		kfree(buf);
-		return -ENOMEM;
-	}
+	if (!pcmds->cmds)
+		goto exit_free;
 
 	pcmds->cmd_cnt = cnt;
 	pcmds->buf = buf;
@@ -1758,6 +1755,10 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt, pcmds->link_state);
 
 	return 0;
+	
+exit_free:
+	kfree(buf);
+	return -ENOMEM;
 }
 static int mdss_panel_dt_get_dst_fmt(u32 bpp, char mipi_mode, u32 pixel_packing,
 				char *dst_format)

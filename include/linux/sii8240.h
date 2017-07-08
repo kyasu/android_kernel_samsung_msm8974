@@ -68,6 +68,7 @@ struct sii8240_platform_data {
 	u8 power_state;
 	u32 swing_level;
 	u32 damping;
+	bool mhl_connected;
 	bool drm_workaround;
 	int ddc_i2c_num;
 	void (*mhl_sel)(bool enable);

@@ -632,6 +632,7 @@ static int rmidev_init_device(struct synaptics_rmi4_data *rmi4_data)
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to export attention gpio\n",
 				__func__);
+		goto err_char_device;
 	} else {
 		retval = gpio_export_link(&(rmi4_data->input_dev->dev),
 				"attn", rmi4_data->dt_data->irq_gpio);
@@ -639,6 +640,7 @@ static int rmidev_init_device(struct synaptics_rmi4_data *rmi4_data)
 			dev_err(&rmi4_data->input_dev->dev,
 					"%s Failed to create gpio symlink\n",
 					__func__);
+			goto err_sysfs_dir;
 		} else {
 			dev_dbg(&rmi4_data->input_dev->dev,
 					"%s: Exported attention gpio %d\n",
@@ -690,6 +692,7 @@ err_sysfs_bin:
 	kobject_put(rmidev->sysfs_dir);
 
 err_sysfs_dir:
+	gpio_unexport(rmi4_data->dt_data->irq_gpio);
 err_char_device:
 	rmidev_device_cleanup(dev_data);
 	mutex_destroy(&dev_data->file_mutex);
@@ -726,6 +729,8 @@ static void rmidev_remove_device(struct synaptics_rmi4_data *rmi4_data)
 	sysfs_remove_bin_file(rmidev->sysfs_dir, &attr_data);
 
 	kobject_put(rmidev->sysfs_dir);
+
+	gpio_unexport(rmi4_data->dt_data->irq_gpio);
 
 	dev_data = rmidev->data;
 	if (dev_data) {

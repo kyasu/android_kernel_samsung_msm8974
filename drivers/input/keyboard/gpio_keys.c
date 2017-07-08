@@ -943,7 +943,7 @@ static ssize_t sysfs_hall_debounce_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(hall_irq_ctrl, S_IRUGO | S_IWUGO,
+static DEVICE_ATTR(hall_irq_ctrl, 0660,
 			sysfs_hall_debounce_show,
 			sysfs_hall_debounce_store);
 #endif

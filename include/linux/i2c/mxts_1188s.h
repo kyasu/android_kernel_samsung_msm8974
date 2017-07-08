@@ -62,6 +62,9 @@
 
 #if defined(CONFIG_SEC_MATISSEWIFI_COMMON)
 #define USE_DUAL_X_MODE 1
+#define CHECK_IN_BOOTLOADER
+#define MXT_CHECK_1664S_BOOT_ID         0x14
+#define MXT_CHECK_1188S1_BOOT_ID        0x1D
 #else
 #define USE_DUAL_X_MODE 0
 #endif

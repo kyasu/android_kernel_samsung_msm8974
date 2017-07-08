@@ -64,6 +64,9 @@ static struct sec_mhl_cable support_cable_list[] = {
 	{ .cable_type = EXTCON_MHL, },
 	{ .cable_type = EXTCON_MHL_VB, },
 	{ .cable_type = EXTCON_SMARTDOCK, },
+#ifdef CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK
+	{ .cable_type = EXTCON_MULTIMEDIADOCK, },
+#endif
 };
 #endif
 
@@ -3268,6 +3271,7 @@ static void sii8240_detection_restart(struct work_struct *work)
 	sii8240->rgnd = RGND_UNKNOWN;
 	sii8240->ap_hdcp_success = false;
 	sii8240->cbus_ready = 0;
+	sii8240->scdt_state = false;
 
 	mhl_hpd_control_low(sii8240);
 
@@ -3337,10 +3341,13 @@ static int sii8240_mhl_onoff(unsigned long event)
 		pr_info("sii8240:detection started\n");
 		wake_lock(&sii8240->mhl_wake_lock);
 		sii8240->mhl_connected = true;
+		sii8240->pdata->mhl_connected = true;
 		sii8240->muic_state = MHL_ATTACHED;
 		sii8240->cbus_ready = 0;
+		sii8240->scdt_state = false;
 	} else {
 		pr_info("sii8240:disconnection\n");
+		sii8240->pdata->mhl_connected = false;
 		/* Charging stop when MHL detach */
 		if (sii8240->pdata->charger_mhl_cb)
 			sii8240->pdata->charger_mhl_cb(false, -1);
@@ -3351,7 +3358,6 @@ static int sii8240_mhl_onoff(unsigned long event)
 #ifdef CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK
 		sii8240->pdata->is_multimediadock = false;
 #endif
-
 		if (sii8240->pdata->hdmi_mhl_ops) {
 			struct msm_hdmi_mhl_ops *hdmi_mhl_ops =	sii8240->pdata->hdmi_mhl_ops;
 			hdmi_mhl_ops->set_upstream_hpd(sii8240->pdata->hdmi_pdev, 0);
@@ -3459,6 +3465,13 @@ static int sii8240_extcon_notifier(struct notifier_block *self,
 		cable->cable_state = event;
 		sii8240->pdata->is_smartdock = true;
 		schedule_work(&cable->work);
+#ifdef CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK
+	} else if (cable->cable_type == EXTCON_MULTIMEDIADOCK) {
+		cable->cable_state = event;
+		if (event == MHL_ATTACHED)
+			sii8240->pdata->is_multimediadock = true;
+		schedule_work(&cable->work);
+#endif
 	}
 	return NOTIFY_DONE;
 }
@@ -3592,6 +3605,7 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 				sii8240->hpd_status = false;
 				sii8240->tmds_enable = false;
 				sii8240->ap_hdcp_success = false;
+				sii8240->scdt_state = false;
 				sii8240->cbus_ready = 0;
 				ret = mhl_modify_reg(tmds, UPSTRM_HPD_CTRL_REG,
 					BIT_HPD_CTRL_HPD_OUT_OVR_VAL_MASK|
@@ -4361,31 +4375,33 @@ static int sii8240_audio_video_intr_control(struct sii8240_data *sii8240)
 	/*AVI InfoFrame*/
 	if ((ceainfo & BIT_INTR8_CEA_NEW_AVI) &&
 			(sii8240->hpd_status == true)) {
-		pr_info("sii8240 : BIT_INTR8_CEA_NEW_AVI\n");
-		ret = sii8240_get_avi_info(sii8240);
-		if (unlikely(ret < 0)) {
-			pr_info("sii8240 : get avi info error\n");
-			return ret;
-		}
-		if (sii8240_check_avi_info(sii8240)) {
-			pr_info("sii8240: %s():%d AVI change!\n",
+		if (sii8240->scdt_state) {	
+			pr_info("sii8240 : BIT_INTR8_CEA_NEW_AVI\n");
+			ret = sii8240_get_avi_info(sii8240);
+			if (unlikely(ret < 0)) {
+				pr_info("sii8240 : get avi info error\n");
+				return ret;
+			}
+			if (sii8240_check_avi_info(sii8240)) {
+				pr_info("sii8240: %s():%d AVI change!\n",
 						__func__, __LINE__);
-		checksum = sii8240_check_avi_info_checksum
-				(sii8240, sii8240->aviInfoFrame);
-		if (checksum) {
-			pr_info("sii8240: %s():%d checksum error\n",
-						__func__, __LINE__);
-			return -EINVAL;
-		}
-		memcpy(&sii8240->current_aviInfoFrame,
-				&sii8240->aviInfoFrame, INFO_BUFFER);
+				checksum = sii8240_check_avi_info_checksum
+					(sii8240, sii8240->aviInfoFrame);
+				if (checksum) {
+					pr_info("sii8240: %s():%d checksum error\n",
+							__func__, __LINE__);
+					return -EINVAL;
+				}
+				memcpy(&sii8240->current_aviInfoFrame,
+						&sii8240->aviInfoFrame, INFO_BUFFER);
 
-		tmds_control(sii8240, false);
-		sii8240->avi_cmd = CEA_NEW_AVI;
-		sii8240->avi_work = true;
-		queue_work(sii8240->avi_cmd_wqs, &sii8240->avi_control_work);
-		} else
-			pr_info("sii8240: no AVIF\n");
+				tmds_control(sii8240, false);
+				sii8240->avi_cmd = CEA_NEW_AVI;
+				sii8240->avi_work = true;
+				queue_work(sii8240->avi_cmd_wqs, &sii8240->avi_control_work);
+			} else
+				pr_info("sii8240: no AVIF\n");
+		}
 	}
 
 	return 0;
@@ -4472,8 +4488,11 @@ static irqreturn_t sii8240_irq_thread(int irq, void *data)
 				}
 			}
 		if (sii8240->state == STATE_MHL_CONNECTED) {
-			if (sii8240->pdata->charger_mhl_cb)
-				sii8240->pdata->charger_mhl_cb(true, 0x03);
+			pr_info("%s mhl_connected(%d)\n", __func__, sii8240->pdata->mhl_connected);
+			if (sii8240->pdata->mhl_connected) {
+				if (sii8240->pdata->charger_mhl_cb)
+					sii8240->pdata->charger_mhl_cb(true, 0x03);
+			}
 			ret = sii8240_init_regs(sii8240);
 			if (unlikely(ret < 0)) {
 				pr_err("[ERROR] %s() sii8240_init_regs\n", __func__);
@@ -4620,6 +4639,7 @@ static irqreturn_t sii8240_irq_thread(int irq, void *data)
 					}
 
 					sii8240->hpd_status = false;
+					sii8240->scdt_state = false;
 					tmds_control(sii8240, false);
 					ret = mhl_modify_reg(tmds,
 						UPSTRM_HPD_CTRL_REG,
@@ -4686,6 +4706,7 @@ static irqreturn_t sii8240_irq_thread(int irq, void *data)
 				goto err_exit;
 			}
 			if (BIT_TMDS_CSTAT_P3_SCDT & value) {
+				sii8240->scdt_state = true;
 				pr_info("BIT_TMDS_CSTAT_P3_SCDT\n");
 				memset(&sii8240->aviInfoFrame,
 						0x00, INFO_BUFFER);

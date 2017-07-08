@@ -66,7 +66,6 @@ static struct dsi_cmd hsync_off_cmds;
 static struct dsi_cmd manufacture_id_cmds;
 static struct candella_lux_map candela_map_table;
 
-static struct mipi_samsung_driver_data msd;
 /*List of supported Panels with HW revision detail
  * (one structure per project)
  * {hw_rev,"label string given in panel dtsi file"}
@@ -814,6 +813,10 @@ static int mipi_samsung_disp_send_cmd(
 			cmd_size = display_blank_cmd.num_of_cmds;
 			break;
 		case PANEL_BRIGHT_CTRL:
+			if(msd.mfd->blank_mode != 0){
+				pr_err("%s : panel is off state!!\n", __func__);
+				goto panel_power_off;
+			}
 			cmd_desc = brightness_cmds.cmd_desc;
 			cmd_size = make_brightcontrol_set(msd.dstat.bright_level);
 			/* Single Tx use for DSI_VIDEO_MODE Only */
@@ -850,6 +853,10 @@ static int mipi_samsung_disp_send_cmd(
 			break;
 #if defined(AUTO_BRIGHTNESS_CABC_FUNCTION)
 		case PANEL_CABC_ENABLE:
+			if(msd.mfd->blank_mode != 0){
+				pr_err("%s : panel is off state!!\n", __func__);
+				goto panel_power_off;
+			}
 			cmd_desc = cabc_on_cmds.cmd_desc;
 			cmd_size = cabc_on_cmds.num_of_cmds;
 			break;
@@ -902,7 +909,7 @@ static int mipi_samsung_disp_send_cmd(
 
 unknown_command:
 	LCD_DEBUG("Undefined command\n");
-
+panel_power_off:
 	if (lock)
 		mutex_unlock(&msd.lock);
 
@@ -916,14 +923,41 @@ void mdss_dsi_panel_touchsensing(int enable)
 		pr_err("%s: No panel on! %d\n", __func__, enable);
 		return;
 	}
-
+/*
 	if(enable)
 		mipi_samsung_disp_send_cmd(PANEL_TOUCHSENSING_ON, true);
 	else
 		mipi_samsung_disp_send_cmd(PANEL_TOUCHSENSING_OFF, true);
+*/
 
 	pr_info("%s --\n", __func__);
 }
+
+void mdss_dsi_panel_hsync_onoff(bool onoff)
+{
+	struct msm_fb_data_type *mfd = msd.mfd;
+
+	if (mfd && mfd->panel_power_on/* && msd.dstat.on*/)
+	{
+		if( onoff )
+		{
+			msleep(30);
+			mipi_samsung_disp_send_cmd(PANEL_HSYNC_ON, true);
+			pr_info("%s : HSYNC On\n",__func__);
+		}
+		else
+		{
+			mipi_samsung_disp_send_cmd(PANEL_HSYNC_OFF, true);
+			msleep(10);
+			pr_info("%s : HSYNC Off\n",__func__);
+		}
+	}
+	else
+		pr_err("%s : panel power off\n",__func__);
+
+	return;
+}
+EXPORT_SYMBOL(mdss_dsi_panel_hsync_onoff);
 
 static int mdss_dsi_panel_registered(struct mdss_panel_data *pdata)
 {
@@ -964,7 +998,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	mipi  = &pdata->panel_info.mipi;
 
 	pr_info("mdss_dsi_panel_on DSI_MODE = %d ++\n",mipi->mode);
-	pr_debug("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_debug("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	if (0 && !msd.manufacture_id)
 		msd.manufacture_id = mipi_samsung_manufacture_id(pdata);
@@ -1004,7 +1038,7 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	pr_info("mdss_dsi_panel_off ++\n");
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
-	pr_debug("%s: ctrl=%p ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_debug("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	mipi  = &pdata->panel_info.mipi;
 
@@ -1222,7 +1256,7 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		if (dchdr->dlen > len) {
 			pr_err("%s: dtsi cmd=%x error, len=%d",
 				__func__, dchdr->dtype, dchdr->dlen);
-			return -ENOMEM;
+			goto exit_free;
 		}
 		bp += sizeof(*dchdr);
 		len -= sizeof(*dchdr);
@@ -1234,16 +1268,13 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 	if (len != 0) {
 		pr_err("%s: dcs_cmd=%x len=%d error!",
 				__func__, buf[0], blen);
-		kfree(buf);
-		return -ENOMEM;
+		goto exit_free;
 	}
 
 	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
 						GFP_KERNEL);
-	if (!pcmds->cmds){
-		kfree(buf);
-		return -ENOMEM;
-	}
+	if (!pcmds->cmds)
+		goto exit_free;
 
 	pcmds->cmd_cnt = cnt;
 	pcmds->buf = buf;
@@ -1271,6 +1302,9 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt, pcmds->link_state);
 
 	return 0;
+exit_free:
+	kfree(buf);
+	return -ENOMEM;
 }
 
 static int mdss_panel_parse_dt(struct device_node *np,
@@ -1796,7 +1830,7 @@ static void load_tuning_file(char *filename)
 	filp = filp_open(filename, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
 		printk(KERN_ERR "%s File open failed\n", __func__);
-		return;
+		goto err;
 	}
 
 	l = filp->f_path.dentry->d_inode->i_size;
@@ -1806,7 +1840,7 @@ static void load_tuning_file(char *filename)
 	if (dp == NULL) {
 		pr_info("Can't not alloc memory for tuning file load\n");
 		filp_close(filp, current->files);
-		return;
+		goto err;
 	}
 	pos = 0;
 	memset(dp, 0, l);
@@ -1819,7 +1853,7 @@ static void load_tuning_file(char *filename)
 		pr_info("vfs_read() filed ret : %d\n", ret);
 		kfree(dp);
 		filp_close(filp, current->files);
-		return;
+		goto err;
 	}
 
 	filp_close(filp, current->files);
@@ -1829,6 +1863,10 @@ static void load_tuning_file(char *filename)
 	sending_tune_cmd(dp, l);
 
 	kfree(dp);
+
+	return;
+err:
+	set_fs(fs);
 }
 
 static ssize_t tuning_show(struct device *dev,

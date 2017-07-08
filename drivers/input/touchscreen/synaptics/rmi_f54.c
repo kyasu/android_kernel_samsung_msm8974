@@ -2420,8 +2420,13 @@ static bool synaptics_skip_firmware_update(struct synaptics_rmi4_data *rmi4_data
 	if ((rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5100) &&
 		(rmi4_data->ic_revision_of_ic >= SYNAPTICS_IC_REVISION_A2)) {
 #if !defined(CONFIG_SEC_HESTIA_PROJECT)
-		rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2];
-		rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2];
+		if (strncmp(rmi4_data->dt_data->project, "PSLTE", 5) == 0) {
+			rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_PS];
+			rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_PS];
+		} else {
+			rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2];
+			rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2];
+		}
 #else
 		rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5050];
 		rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5050];
@@ -2579,8 +2584,13 @@ static int synaptics_load_fw_from_kernel(struct synaptics_rmi4_data *rmi4_data, 
 	if ((rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5100) &&
 		(rmi4_data->ic_revision_of_ic >= SYNAPTICS_IC_REVISION_A2)) {
 #if !defined(CONFIG_SEC_HESTIA_PROJECT)
-		rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2];
-		rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2];
+		if (strncmp(rmi4_data->dt_data->project, "PSLTE", 5) == 0) {
+			rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_PS];
+			rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_PS];
+		} else {
+			rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2];
+			rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2];
+		}
 #else
 		rmi4_data->ic_revision_of_bin = (int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5050];
 		rmi4_data->fw_version_of_bin = (int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5050];
@@ -2659,11 +2669,19 @@ static int synaptics_load_fw_from_ums(struct synaptics_rmi4_data *rmi4_data)
 			if ((rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5100) &&
 				(rmi4_data->ic_revision_of_ic >= SYNAPTICS_IC_REVISION_A2)) {
 #if !defined(CONFIG_SEC_HESTIA_PROJECT)
-				ic_revision_of_bin = (int)fw_data[IC_REVISION_BIN_OFFSET_S5100_A2];
-				fw_version_of_bin = (int)fw_data[FW_VERSION_BIN_OFFSET_S5100_A2];
-				fw_release_date_of_bin =
-					(int)(fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_A2] << 8
-							| fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_A2 + 1]);
+				if (strncmp(rmi4_data->dt_data->project, "PSLTE", 5) == 0) {
+					ic_revision_of_bin = (int)fw_data[IC_REVISION_BIN_OFFSET_S5100_PS];
+					fw_version_of_bin = (int)fw_data[FW_VERSION_BIN_OFFSET_S5100_PS];
+					fw_release_date_of_bin =
+						(int)(fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_PS] << 8
+								| fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_PS + 1]);
+				} else {
+					ic_revision_of_bin = (int)fw_data[IC_REVISION_BIN_OFFSET_S5100_A2];
+					fw_version_of_bin = (int)fw_data[FW_VERSION_BIN_OFFSET_S5100_A2];
+					fw_release_date_of_bin =
+						(int)(fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_A2] << 8
+								| fw_data[DATE_OF_FIRMWARE_BIN_OFFSET_S5100_A2 + 1]);
+				}
 #else
 				ic_revision_of_bin = (int)fw_data[IC_REVISION_BIN_OFFSET_S5050];
 				fw_version_of_bin = (int)fw_data[FW_VERSION_BIN_OFFSET_S5050];
@@ -2836,9 +2854,15 @@ static void get_fac_fw_ver_bin(void)
 		if ((rmi4_data->ic_version == SYNAPTICS_PRODUCT_ID_S5100) &&
 			(rmi4_data->ic_revision_of_ic >= SYNAPTICS_IC_REVISION_A2))
 #if !defined(CONFIG_SEC_HESTIA_PROJECT)
-			snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "SY00%02X%02X",
-					(int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2],
-					(int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2]);
+			if (strncmp(rmi4_data->dt_data->project, "PSLTE", 5) == 0) {
+				snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "SY00%02X%02X",
+						(int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_PS],
+						(int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_PS]);
+			} else {
+				snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "SY00%02X%02X",
+						(int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5100_A2],
+						(int)fw_entry->data[FW_VERSION_BIN_OFFSET_S5100_A2]);
+			}
 #else
 			snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "SY00%02X%02X",
 					(int)fw_entry->data[IC_REVISION_BIN_OFFSET_S5050],
@@ -5336,9 +5360,16 @@ static int synaptics_rmi4_f54_set_ctrl(void)
 	unsigned char length;
 	unsigned char reg_num = 0;
 	unsigned char num_of_sensing_freqs;
-	unsigned short reg_addr = f54->control_base_addr;
-	struct f54_control *control = &f54->control;
-	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
+	unsigned short reg_addr;
+	struct f54_control *control;
+	struct synaptics_rmi4_data *rmi4_data;
+
+	if (!f54)
+		return -ENODEV;
+		
+	reg_addr = f54->control_base_addr;
+	control = &f54->control;
+	rmi4_data = f54->rmi4_data;
 
 	num_of_sensing_freqs = f54->query.number_of_sensing_frequencies;
 
@@ -5867,6 +5898,9 @@ int synaptics_rmi4_f54_set_control(struct synaptics_rmi4_data *rmi4_data)
 	unsigned char intr_count = 0;
 	unsigned char intr_offset;
 	struct synaptics_rmi4_fn_desc rmi_fd;
+
+	if (!f54)
+		return -ENOMEM;
 
 	f54->rmi4_data = rmi4_data;
 	f54->fn_ptr->read = rmi4_data->i2c_read;

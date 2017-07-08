@@ -77,7 +77,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 			val |= csiphy_params->csid_core;
 		}
 		msm_camera_io_w(val, csiphy_dev->clk_mux_base);
-		CDBG("%s clk mux addr %p val 0x%x\n", __func__,
+		CDBG("%s clk mux addr %pK val 0x%x\n", __func__,
 			csiphy_dev->clk_mux_base, val);
 		mb();
 	}
@@ -231,7 +231,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 			ARRAY_SIZE(csiphy_8960_clk_info), 1);
 	} else {
 		if (!csiphy_dev->clk_mux_mem || !csiphy_dev->clk_mux_io) {
-			pr_err("%s clk mux mem %p io %p\n", __func__,
+			pr_err("%s clk mux mem %pK io %pK\n", __func__,
 				csiphy_dev->clk_mux_mem,
 				csiphy_dev->clk_mux_io);
 			rc = -ENOMEM;
@@ -372,7 +372,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 	struct msm_camera_csi_lane_params *csi_lane_params;
 	uint16_t csi_lane_mask;
 	csi_lane_params = (struct msm_camera_csi_lane_params *)arg;
-	csi_lane_mask = csi_lane_params->csi_lane_mask;
+	csi_lane_mask = (csi_lane_params->csi_lane_mask & 0x1F);
 
 	if (!csiphy_dev || !csiphy_dev->ref_count) {
 		pr_err("%s csiphy dev NULL / ref_count ZERO\n", __func__);
@@ -405,7 +405,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 		csiphy_dev->lane_mask[csiphy_dev->pdev->id] &=
 			~(csi_lane_params->csi_lane_mask);
 		i = 0;
-		while (csi_lane_mask & 0x1F) {
+		while (csi_lane_mask) {
 			if (csi_lane_mask & 0x1) {
 				msm_camera_io_w(0x0, csiphy_dev->base +
 					MIPI_CSIPHY_LNn_CFG2_ADDR + 0x40*i);
@@ -449,7 +449,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 	struct msm_camera_csi_lane_params *csi_lane_params;
 	uint16_t csi_lane_mask;
 	csi_lane_params = (struct msm_camera_csi_lane_params *)arg;
-	csi_lane_mask = csi_lane_params->csi_lane_mask;
+	csi_lane_mask = (csi_lane_params->csi_lane_mask & 0x1F);
 
 	if (!csiphy_dev || !csiphy_dev->ref_count) {
 		pr_err("%s csiphy dev NULL / ref_count ZERO\n", __func__);
@@ -476,7 +476,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 		csiphy_dev->lane_mask[csiphy_dev->pdev->id] &=
 			~(csi_lane_params->csi_lane_mask);
 		i = 0;
-		while (csi_lane_mask & 0x1F) {
+		while (csi_lane_mask) {
 			if (csi_lane_mask & 0x1) {
 				msm_camera_io_w(0x0, csiphy_dev->base +
 					MIPI_CSIPHY_LNn_CFG2_ADDR + 0x40*i);

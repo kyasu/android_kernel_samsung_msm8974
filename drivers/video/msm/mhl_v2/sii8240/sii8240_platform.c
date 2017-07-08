@@ -44,11 +44,19 @@ static struct gpiomux_setting hdmi_active_1_cfg = {
 	.pull = GPIOMUX_PULL_UP,
 };
 
+#ifdef CONFIG_MACH_JACTIVESKT
+static struct gpiomux_setting hdmi_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+#else
 static struct gpiomux_setting hdmi_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
+#endif
 
 static struct qpnp_pin_cfg  MHL_PIN_PM_GPIO_WAKE = {
 	.mode = 1, /*QPNP_PIN_MODE_DIG_OUT*/
@@ -232,7 +240,7 @@ static void sii8240_charger_mhl_cb(bool otg_enable, int charger)
 	union power_supply_propval value;
 	int i, ret = 0;
 	struct power_supply *psy;
-	pdata->charging_type = POWER_SUPPLY_TYPE_MISC;
+	int charging_type = POWER_SUPPLY_TYPE_MISC;
 
 	ret = sii8240_muic_get_charging_type();
 	if (ret < 0) {
@@ -244,18 +252,18 @@ static void sii8240_charger_mhl_cb(bool otg_enable, int charger)
 
 	if (charger == 0x00) {
 		pr_info("%s() TA charger 500mA\n", __func__);
-		pdata->charging_type = POWER_SUPPLY_TYPE_MHL_500;
+		charging_type = POWER_SUPPLY_TYPE_MHL_500;
 	} else if (charger == 0x01) {
 		pr_info("%s() TA charger 900mA\n", __func__);
-		pdata->charging_type = POWER_SUPPLY_TYPE_MHL_900;
+		charging_type = POWER_SUPPLY_TYPE_MHL_900;
 	} else if (charger == 0x02) {
 		pr_info("%s() TA charger 1500mA\n", __func__);
-		pdata->charging_type = POWER_SUPPLY_TYPE_MHL_1500;
+		charging_type = POWER_SUPPLY_TYPE_MHL_1500;
 	} else if (charger == 0x03) {
 		pr_info("%s() USB charger\n", __func__);
-		pdata->charging_type = POWER_SUPPLY_TYPE_MHL_USB;
+		charging_type = POWER_SUPPLY_TYPE_MHL_USB;
 	} else
-		pdata->charging_type = POWER_SUPPLY_TYPE_BATTERY;
+		charging_type = POWER_SUPPLY_TYPE_BATTERY;
 
 #ifdef CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK
 	pr_info("MMDock_code\n");
@@ -264,14 +272,14 @@ static void sii8240_charger_mhl_cb(bool otg_enable, int charger)
 #ifdef CONFIG_MFD_MAX77888
 		if (otg_enable && !sii8240_vbus_present()) {
 			otg_enable = false;
-			pdata->charging_type = POWER_SUPPLY_TYPE_BATTERY;
+			charging_type = POWER_SUPPLY_TYPE_BATTERY;
 		} else
 #endif
 		if (otg_enable == true || charger == 0x00) {
 			pr_info("MMDock_connected otg_enable = %d  charger = 0x%02x\n", otg_enable, charger);
 			return;
-		} else if (pdata->charging_type != POWER_SUPPLY_TYPE_BATTERY) {
-			pdata->charging_type = (charger == 0x03) ? POWER_SUPPLY_TYPE_MDOCK_USB :POWER_SUPPLY_TYPE_MDOCK_TA;
+		} else if (charging_type != POWER_SUPPLY_TYPE_BATTERY) {
+			charging_type = (charger == 0x03) ? POWER_SUPPLY_TYPE_MDOCK_USB :POWER_SUPPLY_TYPE_MDOCK_TA;
 			pr_info("sii8240 : %s MDOCK_TA with charger(0x%02x)\n", __func__, charger);
 		}
 	}
@@ -286,7 +294,7 @@ static void sii8240_charger_mhl_cb(bool otg_enable, int charger)
 #endif
 				if (pdata->muic_otg_set)
 					pdata->muic_otg_set(true);
-				pdata->charging_type = POWER_SUPPLY_TYPE_OTG;
+				charging_type = POWER_SUPPLY_TYPE_OTG;
 			}
 		}
 	} else {
@@ -303,7 +311,7 @@ static void sii8240_charger_mhl_cb(bool otg_enable, int charger)
 		pr_err("[ERROR] %s: fail to get battery ps\n", __func__);
 		return;
 	}
-	value.intval = pdata->charging_type;
+	value.intval = charging_type;
 	ret = psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE, &value);
 	if (ret) {
 		pr_err("[ERROR] %s: fail to set power_suppy ONLINE property(%d)\n",
@@ -484,6 +492,14 @@ static void of_sii8240_gpio_config(enum mhl_sleep_state sleep_status)
 			pr_err("[ERROR] %s() gpio_mhl_en is NULL\n", __func__);
 		}
 	}
+#if defined(CONFIG_MACH_KACTIVELTE_DCM)
+	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_sda, GPIOMUX_FUNC_3,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_scl, GPIOMUX_FUNC_3,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+#endif
 }
 
 static void of_sii8240_hw_onoff(bool onoff)
@@ -491,6 +507,16 @@ static void of_sii8240_hw_onoff(bool onoff)
 	int ret;
 	struct sii8240_platform_data *pdata = g_pdata;
 	pr_info("%s: Onoff: %d\n", __func__, onoff);
+
+#if defined(CONFIG_SEC_FRESCO_PROJECT)
+	pr_err("%s: set gpio configurations for mhl i2c\n", __func__);
+	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_sda, GPIOMUX_FUNC_4,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_scl, GPIOMUX_FUNC_4,
+				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+			GPIO_CFG_ENABLE);
+#endif
 	if (mhl_power_on == onoff) {
 		pr_info("sii8240 : MHL power is already %d\n", onoff);
 		return;

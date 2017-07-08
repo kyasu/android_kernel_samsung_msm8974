@@ -9,7 +9,7 @@
 #ifndef _ES705_H
 #define _ES705_H
 
-#if defined(CONFIG_SEC_S_PROJECT)
+#if defined(CONFIG_SEC_S_PROJECT) || defined(CONFIG_MACH_KACTIVELTE_KOR)
 #define ES705_VDDCORE_MAX77826
 #endif
 #include <linux/cdev.h>

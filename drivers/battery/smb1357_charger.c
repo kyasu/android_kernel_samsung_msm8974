@@ -1435,6 +1435,8 @@ static void smb1357_charger_function_control(
 		case POWER_SUPPLY_TYPE_MHL_1500:
 		case POWER_SUPPLY_TYPE_LAN_HUB:
 		case POWER_SUPPLY_TYPE_SMART_NOTG:
+		case POWER_SUPPLY_TYPE_MDOCK_TA:
+		case POWER_SUPPLY_TYPE_SMART_OTG:
 			/* High-current mode */
 			usb_type = USB3_VAL;
 			usb_mode = USB_AC_VAL;
@@ -1449,7 +1451,6 @@ static void smb1357_charger_function_control(
 		case POWER_SUPPLY_TYPE_USB_ACA:
 		case POWER_SUPPLY_TYPE_MHL_500:
 		case POWER_SUPPLY_TYPE_MHL_USB:
-		case POWER_SUPPLY_TYPE_SMART_OTG:
 		case POWER_SUPPLY_TYPE_POWER_SHARING:
 			/* USB5 */
 			usb_type = USB2_VAL;
@@ -1768,8 +1769,14 @@ static void smb1357_charger_otg_control(
 
 void smb1357_charger_shutdown(struct i2c_client *client)
 {
+	struct smb1357_charger_data *smb1357data = i2c_get_clientdata(client);
+	struct sec_charger_info *charger = smb1357data->charger;
+
+	/* Disable OTG */
+	charger->cable_type = POWER_SUPPLY_TYPE_BATTERY;
+	smb1357_charger_otg_control(client);
+
 	pr_info("%s: smb1357 Charging Disabled\n", __func__);
-	
 	smb1357_charger_masked_write_reg(client, CFG_E_REG,
 		HVDCP_ADAPTER_MASK, HVDCP_ADAPTER_5V);
 	return;
@@ -1920,6 +1927,13 @@ bool smb1357_hal_chg_get_property(struct i2c_client *client,
 			"%s : set-current(%dmA), current now(%dmA)\n",
 			__func__, charger->charging_current, val->intval);
 		break;
+#if defined(CONFIG_BATTERY_SWELLING)
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		smb1357_charger_i2c_read(client, VFLOAT_REG, &port);
+		val->intval = port;
+		pr_info("%s: Float voltage : 0x%x\n", __func__, val->intval);
+		break;
+#endif
 	default:
 		return false;
 	}
@@ -2091,6 +2105,9 @@ static enum power_supply_property smb1357_charger_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+#if defined(CONFIG_BATTERY_SWELLING)
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+#endif
 };
 
 static int smb1357_chg_get_property(struct power_supply *psy,
@@ -2104,6 +2121,9 @@ static int smb1357_chg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_MAX:	/* input current limit set */
 		val->intval = charger->charging_current_max;
 		break;
+#if defined(CONFIG_BATTERY_SWELLING)
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+#endif
 	case POWER_SUPPLY_PROP_PRESENT:
 	case POWER_SUPPLY_PROP_ONLINE:
 	case POWER_SUPPLY_PROP_STATUS:
@@ -2134,8 +2154,12 @@ static int smb1357_chg_set_property(struct power_supply *psy,
 	union power_supply_propval input_value;
 	union power_supply_propval charging_value;
 	int set_charging_current, set_charging_current_max;
+	int previous_cable_type = charger->cable_type;
 	const int usb_charging_current = charger->pdata->charging_current[
 		POWER_SUPPLY_TYPE_USB].fast_charging_current;
+#if defined(CONFIG_BATTERY_SWELLING)
+	u8 reg_data;
+#endif
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
@@ -2156,10 +2180,43 @@ static int smb1357_chg_set_property(struct power_supply *psy,
 
 		if (charger->cable_type == POWER_SUPPLY_TYPE_BATTERY){
 			charger->is_charging = false;
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+			charger->is_mdock = false;
+#endif
 		}
 		else {
 			charger->is_charging = true;
-
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+			if (charger->is_mdock) { /* if mdock was already inserted, then check OTG, or NOTG state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_NOTG) {
+					charger->charging_current =
+						charger->pdata->charging_current
+						[POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current;
+					charger->charging_current_max =
+						charger->pdata->charging_current
+						[POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit;
+				} else if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_OTG) {
+					charger->charging_current =
+						charger->pdata->charging_current
+						[POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current - 300;
+					charger->charging_current_max =
+						charger->pdata->charging_current
+						[POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit - 300;
+				}
+			} else { /* if mdock wasn't inserted, then check mdock state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_MDOCK_TA) {
+					charger->is_mdock = true;
+					if (previous_cable_type == POWER_SUPPLY_TYPE_SMART_OTG) {
+						charger->charging_current =
+							charger->pdata->charging_current
+							[POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current - 300;
+						charger->charging_current_max =
+							charger->pdata->charging_current
+							[POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit - 300;
+					}
+				}
+			}
+#endif
 			/* current setting */
 			if ((charger->cable_type == POWER_SUPPLY_TYPE_MAINS) ||
 				(charger->cable_type == POWER_SUPPLY_TYPE_HV_MAINS) ||
@@ -2269,7 +2326,7 @@ static int smb1357_chg_set_property(struct power_supply *psy,
 				}
 
 				if (smb1357data->siop_level == 0) {
-					charging_value.intval = usb_charging_current;
+					charging_value.intval = 0;
 				}
 				else {
 					charging_value.intval =
@@ -2293,7 +2350,7 @@ static int smb1357_chg_set_property(struct power_supply *psy,
 			}
 
 			if (smb1357data->siop_level == 0) {
-				charging_value.intval = usb_charging_current;
+				charging_value.intval = 0;
 			}
 			else {
 				charging_value.intval =
@@ -2334,6 +2391,14 @@ static int smb1357_chg_set_property(struct power_supply *psy,
 		}
 		break;
 
+#if defined(CONFIG_BATTERY_SWELLING)
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		pr_info("%s: float voltage(%d)\n", __func__, val->intval);
+		smb1357_set_vfloat(charger->client, val->intval);
+		smb1357_charger_i2c_read(charger->client, VFLOAT_REG, &reg_data);
+		pr_info("%s: Float voltage set to : 0x%x\n", __func__, reg_data);
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -3243,6 +3308,9 @@ static int smb1357_charger_probe(
 	chg_temp_table_size =
 		sizeof(chg_temp_table)/sizeof(sec_bat_adc_table_data_t);
 
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+	charger->is_mdock = false;
+#endif
 	smb1357data->siop_level = 100;
 	charger->client = client;
 

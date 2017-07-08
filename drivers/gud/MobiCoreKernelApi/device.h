@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -10,6 +10,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ */
+/*
+ * MobiCore client library device management.
+ *
+ * Device and Trustlet Session management Functions.
  */
 #ifndef _MC_KAPI_DEVICE_H_
 #define _MC_KAPI_DEVICE_H_

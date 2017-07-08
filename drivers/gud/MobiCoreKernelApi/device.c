@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -10,6 +10,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ */
+/*
+ * MobiCore client library device management.
+ *
+ * Device and Trustlet Session management Functions.
  */
 #include <linux/list.h>
 #include <linux/slab.h>
@@ -85,7 +90,7 @@ void mcore_device_cleanup(struct mcore_device_t *dev)
 bool mcore_device_open(struct mcore_device_t *dev, const char *device_name)
 {
 	dev->instance = mobicore_open();
-	return (dev->instance != NULL);
+	return dev->instance != NULL;
 }
 
 void mcore_device_close(struct mcore_device_t *dev)

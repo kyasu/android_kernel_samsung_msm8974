@@ -23,9 +23,6 @@ struct isdbt_platform_data {
 	int gpio_int;
 	int gpio_i2c_sda;
 	int gpio_i2c_scl;
-#if defined(CONFIG_MACH_KLIMT_LTE_DCM)
-	int gpio_tsif_en;
-#endif
 #ifdef CONFIG_ISDBT_F_TYPE_ANTENNA
 	int gpio_tmm_sw;
 #endif

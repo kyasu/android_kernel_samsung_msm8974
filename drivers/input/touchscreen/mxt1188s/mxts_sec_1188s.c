@@ -2506,6 +2506,11 @@ static int mxt_init_factory(struct mxt_data *data)
 		dev_err(dev, "Failed to create touchscreen sysfs group\n");
 		goto err_create_group;
 	}
+	error = sysfs_create_link(&data->fdata->fac_dev_ts->kobj,
+		&data->input_dev->dev.kobj, "input");
+	if (error < 0) {
+		dev_err(dev, "Failed to create input symbolic link\n");
+	}
 
 	return 0;
 

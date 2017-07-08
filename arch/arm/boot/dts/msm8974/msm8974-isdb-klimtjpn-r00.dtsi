@@ -23,7 +23,6 @@
 		qcom,isdb-gpio-irq = <&msmgpio 74 0>;
 		qcom,isdb-gpio-i2c_sda = <&msmgpio 87 0>;
 		qcom,isdb-gpio-i2c_scl = <&msmgpio 88 0>;
-		qcom,isdb-gpio-tsif_en = <&msmgpio 90 0>;
 		qcom,isdb-bbm-xtal-freq = <26000>;
 	};
 

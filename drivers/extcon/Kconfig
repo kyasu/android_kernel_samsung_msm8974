@@ -128,8 +128,20 @@ config MUIC_SUPPORT_RUSTPROOF
 	 This option will disable the UART to prevent the rusting of the
 	 IF Connector in the case of Kmini Devices.
 
+config MUIC_SUPPORT_CHARGING_CABLE
+	bool "MUIC CHARGING CABLE SUPPORT"
+	default n
+	help
+	 This option will enable the Charging (Power sharing) Cable
+
 config USBID_STANDARD
 	bool "USBID_STANDARD"
+	default n
+	help
+	  If you say yes here you will get support for usbid standard.
+
+config USBID_STANDARD_VER_01
+	bool "USBID_STANDARD_VER_01"
 	default n
 	help
 	  If you say yes here you will get support for usbid standard.

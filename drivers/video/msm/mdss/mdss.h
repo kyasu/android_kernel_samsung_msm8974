@@ -116,6 +116,7 @@ struct mdss_data_type {
 	bool batfet_required;
 	struct regulator *batfet;
 	u32 max_mdp_clk_rate;
+	struct mdss_util_intf *mdss_util;
 
 	struct platform_device *pdev;
 	char __iomem *mdp_base;
@@ -132,6 +133,7 @@ struct mdss_data_type {
 	u32 has_decimation;
 	u8 has_wfd_blk;
 	u32 has_no_lut_read;
+	atomic_t sd_client_count;
 	u8 has_wb_ad;
 	bool idle_pc_enabled;
 	
@@ -229,6 +231,13 @@ struct mdss_hw {
 	irqreturn_t (*irq_handler)(int irq, void *ptr);
 };
 
+struct mdss_util_intf {
+	void (*iommu_lock)(void);
+	void (*iommu_unlock)(void);
+};
+
+struct mdss_util_intf *mdss_get_util_intf(void);
+
 int mdss_register_irq(struct mdss_hw *hw);
 void mdss_enable_irq(struct mdss_hw *hw);
 void mdss_disable_irq(struct mdss_hw *hw);
@@ -272,5 +281,13 @@ static inline int mdss_get_iommu_domain(u32 type)
 		return -ENODEV;
 
 	return mdss_res->iommu_map[type].domain_idx;
+}
+
+static inline int mdss_get_sd_client_cnt(void)
+{
+	if (!mdss_res)
+		return 0;
+	else
+		return atomic_read(&mdss_res->sd_client_count);
 }
 #endif /* MDSS_H */

@@ -292,7 +292,7 @@ static void fsa9485_reg_init(struct fsa9485_usbsw *usbsw)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
 
 	/* apply Battery Charging Spec. 1.1 @TA/USB detect */
-	ret = i2c_smbus_write_byte_data(client, FSA9485_REG_RESERVED_20, 0x04);
+	ret = i2c_smbus_write_byte_data(client, FSA9485_REG_RESERVED_20, 0x08);
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
 
@@ -791,8 +791,8 @@ void fsa9485_mmdock_attach(void){
 #if defined(CONFIG_VIDEO_MHL_V2)
 	if (pdata->mhl_cb)
 	{
-		pdata->mhl_cb(FSA9485_MMDOCK_ATTACHED);
 		pr_info("MMDock callback from FSA chip for PSY setting in MHL driver\n");
+		pdata->mhl_cb(FSA9485_MMDOCK_ATTACHED);		
 	}
 #endif
 	if (pdata->otg_cb)

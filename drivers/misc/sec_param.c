@@ -10,11 +10,13 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/slab.h>
+#include <linux/workqueue.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 #include <linux/sec_param.h>
 #include <linux/file.h>
 #include <linux/syscalls.h>
+#include <linux/delay.h>
 
 #define PARAM_RD	0
 #define PARAM_WR	1
@@ -27,75 +29,109 @@
 #endif
 #define SEC_PARAM_FILE_OFFSET (SEC_PARAM_FILE_SIZE - 0x100000)
 
+static DEFINE_MUTEX(sec_param_mutex);
 /* single global instance */
 struct sec_param_data *param_data;
+struct sec_param_data_s sched_sec_param_data;
 
-static bool param_sec_operation(void *value, int offset,
-		int size, int direction)
+static void param_sec_operation(struct work_struct *work)
 {
 	/* Read from PARAM(parameter) partition  */
 	struct file *filp;
 	mm_segment_t fs;
 	int ret = true;
-	int flag = (direction == PARAM_WR) ? (O_RDWR | O_SYNC) : O_RDONLY;
+	struct sec_param_data_s *sched_param_data =
+		container_of(work, struct sec_param_data_s, sec_param_work);
+	
+	int flag = (sched_param_data->direction == PARAM_WR) ? (O_RDWR | O_SYNC) : O_RDONLY;
 
-	pr_debug("%s %p %x %d %d\n", __func__, value, offset, size, direction);
+	pr_debug("%s %p %x %d %d\n", __func__, sched_param_data->value, sched_param_data->offset, sched_param_data->size, sched_param_data->direction);
 
 	filp = filp_open(SEC_PARAM_FILE_NAME, flag, 0);
 
 	if (IS_ERR(filp)) {
 		pr_err("%s: filp_open failed. (%ld)\n",
 				__func__, PTR_ERR(filp));
-		return false;
+		complete(&sched_sec_param_data.work);
+		return;
 	}
 
 	fs = get_fs();
 	set_fs(get_ds());
 
-	ret = filp->f_op->llseek(filp, offset, SEEK_SET);
+	ret = filp->f_op->llseek(filp, sched_param_data->offset, SEEK_SET);
 	if (ret < 0) {
 		pr_err("%s FAIL LLSEEK\n", __func__);
 		ret = false;
 		goto param_sec_debug_out;
 	}
 
-	if (direction == PARAM_RD)
-		ret = filp->f_op->read(filp, (char __user *)value,
-				size, &filp->f_pos);
-	else if (direction == PARAM_WR)
-		ret = filp->f_op->write(filp, (char __user *)value,
-				size, &filp->f_pos);
+	if (sched_param_data->direction == PARAM_RD)
+		ret = filp->f_op->read(filp, (char __user *)sched_param_data->value,
+				sched_param_data->size, &filp->f_pos);
+	else if (sched_param_data->direction == PARAM_WR)
+		ret = filp->f_op->write(filp, (char __user *)sched_param_data->value,
+				sched_param_data->size, &filp->f_pos);
 
 param_sec_debug_out:
 	set_fs(fs);
 	filp_close(filp, NULL);
-	return ret;
+	complete(&sched_sec_param_data.work);
+	return;
 }
 
 bool sec_open_param(void)
 {
 	int ret = true;
-	int offset = SEC_PARAM_FILE_OFFSET;
+	
+	pr_info("%s start \n",__func__);
 
 	if (param_data != NULL)
 		return true;
 
+	mutex_lock(&sec_param_mutex);
+
 	param_data = kmalloc(sizeof(struct sec_param_data), GFP_KERNEL);
 
-	ret = param_sec_operation(param_data, offset,
-			sizeof(struct sec_param_data), PARAM_RD);
+	sched_sec_param_data.value=param_data;
+	sched_sec_param_data.offset=SEC_PARAM_FILE_OFFSET;
+	sched_sec_param_data.size=sizeof(struct sec_param_data);
+	sched_sec_param_data.direction=PARAM_RD;
+	
+	schedule_work(&sched_sec_param_data.sec_param_work);
+	wait_for_completion(&sched_sec_param_data.work);
 
-	if (!ret) {
-		kfree(param_data);
-		param_data = NULL;
-		pr_err("%s PARAM OPEN FAIL\n", __func__);
-		return false;
+	pr_info("%s end \n",__func__);
+
+	mutex_unlock(&sec_param_mutex);
+
+	return ret;
+
 	}
+
+bool sec_write_param(void)
+{
+	int ret = true;
+	
+	pr_info("%s start\n",__func__);
+
+	mutex_lock(&sec_param_mutex);
+
+	sched_sec_param_data.value=param_data;
+	sched_sec_param_data.offset=SEC_PARAM_FILE_OFFSET;
+	sched_sec_param_data.size=sizeof(struct sec_param_data);
+	sched_sec_param_data.direction=PARAM_WR;
+	
+	schedule_work(&sched_sec_param_data.sec_param_work);
+	wait_for_completion(&sched_sec_param_data.work);
+
+	pr_info("%s end\n",__func__);
+
+	mutex_unlock(&sec_param_mutex);
 
 	return ret;
 
 }
-EXPORT_SYMBOL(sec_open_param);
 
 bool sec_get_param(enum sec_param_index index, void *value)
 {
@@ -168,7 +204,6 @@ EXPORT_SYMBOL(sec_get_param);
 bool sec_set_param(enum sec_param_index index, void *value)
 {
 	int ret = true;
-	int offset = SEC_PARAM_FILE_OFFSET;
 
 	ret = sec_open_param();
 	if (!ret)
@@ -233,8 +268,9 @@ bool sec_set_param(enum sec_param_index index, void *value)
 		return false;
 	}
 
-	return param_sec_operation(param_data, offset,
-			sizeof(struct sec_param_data), PARAM_WR);
+	ret = sec_write_param();
+
+	return ret;
 }
 EXPORT_SYMBOL(sec_set_param);
 
@@ -320,4 +356,31 @@ failed_create_dev:
 	class_destroy(sec_param_class);
 	return ret;
 }
-module_init(sec_param_sysfs_init);
+
+static int __init sec_param_work_init(void)
+{
+	pr_info("%s: start\n", __func__);
+
+	sched_sec_param_data.offset=0;	
+	sched_sec_param_data.direction=0;	
+	sched_sec_param_data.size=0;
+	sched_sec_param_data.value=NULL;
+
+	init_completion(&sched_sec_param_data.work);
+	INIT_WORK(&sched_sec_param_data.sec_param_work, param_sec_operation);
+
+	sec_param_sysfs_init();
+	pr_info("%s: end\n", __func__);
+
+	return 0;
+}
+
+static void __exit sec_param_work_exit(void)
+{
+	cancel_work_sync(&sched_sec_param_data.sec_param_work);
+	pr_info("%s: exit\n", __func__);
+}
+
+module_init(sec_param_work_init);
+module_exit(sec_param_work_exit);
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,12 +11,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #ifndef _MC_ARM_H_
 #define _MC_ARM_H_
 
 #include "debug.h"
 
+#ifdef CONFIG_ARM64
+inline bool has_security_extensions(void)
+{
+	return true;
+}
+
+inline bool is_secure_mode(void)
+{
+	return false;
+}
+#else
 /*
  * ARM Trustzone specific masks and modes
  * Vanilla Linux is unaware of TrustZone extension.
@@ -24,7 +34,7 @@
  * Also TZ bits in cpuid are not defined, ARM port uses magic numbers,
  * see arch/arm/kernel/setup.c
  */
-#define ARM_MONITOR_MODE		(0b10110)
+#define ARM_MONITOR_MODE		(0x16) /*(0b10110)*/
 #define ARM_SECURITY_EXTENSION_MASK	(0x30)
 
 /* check if CPU supports the ARM TrustZone Security Extensions */
@@ -72,5 +82,6 @@ inline bool is_secure_mode(void)
 
 	return false;
 }
+#endif
 
 #endif /* _MC_ARM_H_ */

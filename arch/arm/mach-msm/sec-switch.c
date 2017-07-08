@@ -516,7 +516,12 @@ int max77803_muic_charger_cb(enum cable_type_muic cable_type)
 		current_cable_type = POWER_SUPPLY_TYPE_MAINS;
 		break;
 	case CABLE_TYPE_OTG_MUIC:
+#ifdef CONFIG_CONTROL_OTG_POPUP
+		current_cable_type = POWER_SUPPLY_TYPE_OTG;
+		break;
+#else
 		goto skip;
+#endif
 	case CABLE_TYPE_JIG_UART_OFF_MUIC:
 		current_cable_type = POWER_SUPPLY_TYPE_BATTERY;
 		break;

@@ -42,6 +42,14 @@ struct sec_battery_extcon_cable{
 
 #define TEMP_HIGHLIMIT_DEFAULT	2000
 
+#if defined(CONFIG_CHARGING_VZWCONCEPT)
+#define STORE_MODE_CHARGING_MAX 35
+#define STORE_MODE_CHARGING_MIN 30
+#else
+#define STORE_MODE_CHARGING_MAX 70
+#define STORE_MODE_CHARGING_MIN 60
+#endif
+
 struct adc_sample_info {
 	unsigned int cnt;
 	int total_adc;
@@ -185,9 +193,7 @@ struct sec_battery_info {
 	int eng_not_full_status;
 #if defined(CONFIG_BATTERY_SWELLING)
 	bool swelling_mode;
-	bool swelling_block;
-	unsigned long swelling_block_start;
-	unsigned long swelling_block_passed;
+	bool charging_block;
 	int swelling_full_check_cnt;
 #endif
 };
@@ -291,6 +297,7 @@ enum {
 #endif
 	BATT_STABILITY_TEST,
 	BATT_INBAT_VOLTAGE,
+	BATT_CAPACITY_MAX,
 };
 
 enum {

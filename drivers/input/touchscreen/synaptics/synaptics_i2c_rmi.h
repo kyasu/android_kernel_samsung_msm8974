@@ -245,7 +245,9 @@
 #define FW_IMAGE_NAME_S5100_K_A3	"tsp_synaptics/synaptics_s5100_k_a3.fw"
 #define FW_IMAGE_NAME_S5100_K_A3_KOR	"tsp_synaptics/synaptics_s5100_kkor_a3.fw"
 #define FW_IMAGE_NAME_S5100_K_ACTIVE	"tsp_synaptics/synaptics_s5100_k_active.fw"
+#define FW_IMAGE_NAME_S5100_K_SPORTS	"tsp_synaptics/synaptics_s5100_k_sports.fw"
 #define FW_IMAGE_NAME_S5100_HESTIA	"tsp_synaptics/synaptics_s5100_hestia.fw"
+#define FW_IMAGE_NAME_S5100_PSLTE	"tsp_synaptics/synaptics_s5100_pslte.fw"
 #define FW_IMAGE_NAME_S5707		"tsp_synaptics/synaptics_s5707.fw"
 #define FW_IMAGE_NAME_S5707_KLIMT	"tsp_synaptics/synaptics_s5707_klimt.fw"
 #define FW_IMAGE_NAME_S5707_KLIMT_V16	"tsp_synaptics/synaptics_s5707_klimt_v16.fw"
@@ -255,6 +257,7 @@
 #define FW_IMAGE_NAME_S5050_F		"tsp_synaptics/synaptics_s5050_f.fw"
 #define FW_IMAGE_NAME_S5006		"tsp_synaptics/synaptics_s5006.fw"
 #define FW_IMAGE_NAME_S5710		"tsp_synaptics/synaptics_chagall_5710.fw"
+#define FW_IMAGE_NAME_S5710_2E		"tsp_synaptics/synaptics_chagall_5710_2E.fw"
 
 
 #define SYNAPTICS_FACTORY_TEST_PASS	2
@@ -276,6 +279,10 @@
 #define DATE_OF_FIRMWARE_BIN_OFFSET_S5100_A2	0x00B0
 #define IC_REVISION_BIN_OFFSET_S5100_A2		0x00B2
 #define FW_VERSION_BIN_OFFSET_S5100_A2		0x00B3
+
+#define DATE_OF_FIRMWARE_BIN_OFFSET_S5100_PS	0x015D00
+#define IC_REVISION_BIN_OFFSET_S5100_PS		0x015D02
+#define FW_VERSION_BIN_OFFSET_S5100_PS		0x015D03
 
 #define PDT_PROPS (0X00EF)
 #define PDT_START (0x00E9)
@@ -1047,6 +1054,8 @@ struct synaptics_rmi4_device_tree_data {
 
 	int num_of_supply;
 	const char **name_of_supply;
+
+	bool surface_only;
 };
 
 /*

@@ -398,8 +398,10 @@ static irqreturn_t tc300k_interrupt(int irq, void *dev_id)
 	key_val = (u8)ret;
 	index = key_val & TC300K_KEY_INDEX_MASK;
 	press = !!(key_val & TC300K_KEY_PRESS_MASK);
-	
-	
+
+	if (!index)
+		return IRQ_HANDLED;
+
 	if (press) {
 		input_report_key(data->input_dev, data->keycodes[index-1], 0);
 

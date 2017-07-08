@@ -22,7 +22,7 @@
 static struct battery_data_t samsung_battery_data[] = {
 	/* SDI battery data (High voltage 4.35V) */
 	{
-		.Capacity = 0x3CD8, /* CHAGALL : 7788mAh */
+		.Capacity = 0x3A98, /* CHAGALL : 7500mAh */
 		.low_battery_comp_voltage = 3500,
 		.low_battery_table = {
 			/* range, slope, offset */
@@ -93,6 +93,18 @@ static sec_bat_adc_table_data_t chg_temp_table[] = {
 #define TEMP_HIGH_RECOVERY_LPM		472
 #define TEMP_LOW_THRESHOLD_LPM		-20
 #define TEMP_LOW_RECOVERY_LPM		0
+#endif
+
+#if defined(CONFIG_BATTERY_SWELLING)
+#define BATT_SWELLING_HIGH_TEMP_BLOCK			450
+#define BATT_SWELLING_HIGH_TEMP_RECOV			400
+#define BATT_SWELLING_LOW_TEMP_BLOCK			100
+#define BATT_SWELLING_LOW_TEMP_RECOV			150
+#define BATT_SWELLING_HIGH_CHG_CURRENT			0
+#define BATT_SWELLING_LOW_CHG_CURRENT			0
+#define BATT_SWELLING_DROP_FLOAT_VOLTAGE		4200
+#define BATT_SWELLING_HIGH_RECHG_VOLTAGE		4150
+#define BATT_SWELLING_LOW_RECHG_VOLTAGE			4050
 #endif
 
 #endif /* __SEC_BATTERY_DATA_H */

@@ -146,14 +146,14 @@ static int of_max77888_dt(struct device *dev, struct max77888_platform_data *pda
 {
 	struct device_node *np = dev->of_node;
 	int retval = 0;
-#ifdef CONFIG_VIBETONZ
+#ifdef CONFIG_SS_VIBRATOR
 	struct max77888_haptic_platform_data  *haptic_data;
 	haptic_data = kzalloc(sizeof(struct max77888_haptic_platform_data), GFP_KERNEL);
 	if (haptic_data == NULL)
 		return -ENOMEM;
 #endif
 	if(!np) {
-#ifdef CONFIG_VIBETONZ
+#ifdef CONFIG_SS_VIBRATOR
 	kfree(haptic_data);
 #endif
 		return -EINVAL;
@@ -189,7 +189,7 @@ static int of_max77888_dt(struct device *dev, struct max77888_platform_data *pda
 	pr_info("%s: irq-gpio_flags: %u \n", __func__, pdata->irq_gpio_flags);
 	pr_info("%s: irq-base: %u \n", __func__, pdata->irq_base);
 
-#ifdef CONFIG_VIBETONZ
+#ifdef CONFIG_SS_VIBRATOR
 	of_property_read_u32(np, "haptic,max_timeout", &haptic_data->max_timeout);
 	of_property_read_u32(np, "haptic,duty", &haptic_data->duty);
 	of_property_read_u32(np, "haptic,period", &haptic_data->period);

@@ -2104,7 +2104,7 @@ static int max77888_muic_handle_attach(struct max77888_muic_info *info,
 		break;
 #endif /* CONFIG_MUIC_MAX77888_SUPPORT_OTG_AUDIO_DOCK */
 	case CABLE_TYPE_MMDOCK_MUIC:
-		if (adc != ADC_MMDOCK) {
+		if ((adc != ADC_MMDOCK) || (!vbvolt)) {
 			dev_warn(info->dev, "%s: assume mm dock detach\n",
 					__func__);
 

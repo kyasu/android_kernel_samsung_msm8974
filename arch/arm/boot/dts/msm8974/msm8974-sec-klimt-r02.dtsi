@@ -474,8 +474,8 @@
 			bma255-i2c,sda = <&msmgpio 87 0>;
 			bma255-i2c,acc_int1-gpio = <&msmgpio 86 0x00>;
 			bma255-i2c,chip_pos = <4>;
-			bma255-i2c,vdd-supply = <&pm8941_l18>;
-			bma255-i2c,vdd-io-supply = <&pm8941_lvs1>;
+			bma255-i2c,vdd = <&pm8941_l18>;
+			bma255-i2c,vdd-io = <&pm8941_lvs1>;
 		};
 		bmg160-i2c@68 {
 			compatible = "bmg160-i2c";

@@ -214,11 +214,6 @@ static int get_cmd_rsp_buffers(int handle_index,
 		return SDMX_STATUS_OUT_OF_MEM;
 	}
 
-	if (sdmx_qseecom_handles[handle_index] == NULL) {
-		pr_err("%s: sdmx_qseecom_handles[%d] is NULL\n", __func__, handle_index);
-		return SDMX_STATUS_GENERAL_FAILURE;
-	}
-
 	*cmd = sdmx_qseecom_handles[handle_index]->sbuf;
 	*rsp = sdmx_qseecom_handles[handle_index]->sbuf + *cmd_len;
 	return SDMX_SUCCESS;
@@ -338,6 +333,9 @@ int sdmx_open_session(int *session_handle)
 	mutex_init(&sdmx_lock[*session_handle]);
 	ret = rsp->ret;
 
+	pr_err("QCTK: %s SET: from %s(%d) *session_handle:%d, handle 0x%p\n", __func__,
+		current->comm, current->pid, *session_handle, qseecom_handle);
+
 	/* Get and print the app version */
 	version_ret = sdmx_get_version(*session_handle, &version);
 	if (SDMX_SUCCESS == version_ret)
@@ -363,7 +361,11 @@ int sdmx_close_session(int session_handle)
 	struct sdmx_close_ses_rsp *rsp;
 	enum sdmx_status ret;
 
-	if ((session_handle < 0) || (session_handle >= SDMX_MAX_SESSIONS))
+	pr_err("QCTK:start %s CLEAR: from %s(%d) session_handle:%d, handle NULL\n", __func__, 
+			current->comm, current->pid, session_handle);
+
+	if ((session_handle < 0) || (session_handle >= SDMX_MAX_SESSIONS) ||
+		!(sdmx_qseecom_handles[session_handle]))
 		return SDMX_STATUS_INVALID_INPUT_PARAMS;
 
 	cmd_len = sizeof(struct sdmx_close_ses_req);
@@ -403,6 +405,9 @@ int sdmx_close_session(int session_handle)
 	sdmx_qseecom_handles[session_handle] = NULL;
 out:
 	mutex_unlock(&sdmx_lock[session_handle]);
+
+	pr_err("QCTK:end %s CLEAR: from %s(%d) session_handle:%d, handle NULL\n", __func__, 
+			current->comm, current->pid, session_handle);
 
 	return ret;
 }

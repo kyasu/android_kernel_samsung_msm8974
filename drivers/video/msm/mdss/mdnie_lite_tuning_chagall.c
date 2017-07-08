@@ -139,11 +139,13 @@ const char outdoor_name[MAX_OUTDOOR_MODE][20] = {
 	"OUTDOOR_ON_MODE",
 };
 
-const char accessibility_name[ACCESSIBILITY_MAX][20] = {
+const char accessibility_name[ACCESSIBILITY_MAX][25] = {
 	"ACCESSIBILITY_OFF",
 	"NEGATIVE_MODE",
 	"COLOR_BLIND_MODE",
 	"SCREEN_CURTAIN_MODE",
+	"GRAYSCALE_MODE",
+	"GRAYSCALE_NEGATIVE_MODE",
 };
 
 void print_tun_data(void)
@@ -266,7 +268,7 @@ void mDNIe_Set_Mode(void)
 		INPUT_PAYLOAD2(blind_tune_value[mdnie_tun_state.accessibility][1]);
 	}
 
-	else if (mdnie_msd->dstat.auto_brightness == 6) {
+	else if (mdnie_msd->dstat.auto_brightness >= 6 && mdnie_msd->dstat.bright_level == 255) {
 		DPRINT("[LOCAL CE] HBM mode! only LOCAL CE tuning\n");
 		if((mdnie_tun_state.scenario == mDNIe_BROWSER_MODE)||(mdnie_tun_state.scenario == mDNIe_eBOOK_MODE)) {
 			INPUT_PAYLOAD1(LOCAL_CE_TEXT_1);
@@ -670,6 +672,10 @@ static ssize_t accessibility_store(struct device *dev,
 				buffer, MDNIE_COLOR_BLINDE_CMD);
 	} else if (cmd_value == SCREEN_CURTAIN) {
 		mdnie_tun_state.accessibility = SCREEN_CURTAIN;
+	} else if (cmd_value == GRAYSCALE) {
+		mdnie_tun_state.accessibility = GRAYSCALE;
+	} else if (cmd_value == GRAYSCALE_NEGATIVE) {
+		mdnie_tun_state.accessibility = GRAYSCALE_NEGATIVE;
 	} else if (cmd_value == ACCESSIBILITY_OFF) {
 		mdnie_tun_state.accessibility = ACCESSIBILITY_OFF;
 	} else

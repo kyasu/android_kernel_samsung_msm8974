@@ -150,6 +150,11 @@ static struct battery_data_t samsung_battery_data[] = {
 		.RCOMP_charging = 0x5D,
 		.temp_cohot = -175,
 		.temp_cocold = -5825,
+#elif defined(CONFIG_MACH_KACTIVELTE_KOR)
+		.RCOMP0 = 0x7E,
+		.RCOMP_charging = 0x7E,
+		.temp_cohot = -762,
+		.temp_cocold = -4787,
 #elif defined(CONFIG_SEC_KACTIVE_PROJECT)
 		.RCOMP0 = 0x5D,
 		.RCOMP_charging = 0x5D,
@@ -199,6 +204,10 @@ static struct battery_data_t samsung_battery_data[] = {
 #define CAPACITY_MAX			980
 #define CAPACITY_MAX_MARGIN	50
 #define CAPACITY_MIN			-7
+#elif defined(CONFIG_MACH_KACTIVELTE_KOR)
+#define CAPACITY_MAX			990
+#define CAPACITY_MAX_MARGIN	70
+#define CAPACITY_MIN			0
 #elif defined(CONFIG_SEC_K_PROJECT) || defined(CONFIG_SEC_KACTIVE_PROJECT) || \
 	defined(CONFIG_SEC_KSPORTS_PROJECT)
 #define CAPACITY_MAX			990
@@ -817,6 +826,33 @@ static sec_bat_adc_table_data_t temp_table[] = {
 	{-300,  -350},
 	{-400,  -450},
 };
+/* only for G870F0 */
+#elif defined(CONFIG_MACH_KACTIVELTE_KOR)
+static sec_bat_adc_table_data_t temp_table[] = {
+	{25935, 900},
+	{26149, 850},
+	{26399, 800},
+	{26741, 750},
+	{27052, 700},
+	{27441, 650},
+	{27971, 600},
+	{28551, 550},
+	{29229, 500},
+	{30011, 450},
+	{30895, 400},
+	{31867, 350},
+	{32921, 300},
+	{34036, 250},
+	{35168, 200},
+	{36303, 150},
+	{37374, 100},
+	{38371, 50},
+	{39252, 0},
+	{40077, -50},
+	{40826, -100},
+	{41381, -150},
+	{41824, -200},
+};
 #else
 static sec_bat_adc_table_data_t temp_table[] = {
 	{25950, 900},
@@ -950,30 +986,30 @@ static sec_bat_adc_table_data_t chg_temp_table[] = {
 #define TEMP_LOW_THRESHOLD_LPM		-50
 #define TEMP_LOW_RECOVERY_LPM		0
 #elif defined (CONFIG_MACH_KLTE_JPN)
-#define TEMP_HIGH_THRESHOLD_EVENT	600
-#define TEMP_HIGH_RECOVERY_EVENT		460
+#define TEMP_HIGH_THRESHOLD_EVENT	580
+#define TEMP_HIGH_RECOVERY_EVENT		530
 #define TEMP_LOW_THRESHOLD_EVENT		-50
 #define TEMP_LOW_RECOVERY_EVENT		0
-#define TEMP_HIGH_THRESHOLD_NORMAL	600
-#define TEMP_HIGH_RECOVERY_NORMAL	460
+#define TEMP_HIGH_THRESHOLD_NORMAL	580
+#define TEMP_HIGH_RECOVERY_NORMAL	530
 #define TEMP_LOW_THRESHOLD_NORMAL	-50
 #define TEMP_LOW_RECOVERY_NORMAL	0
-#define TEMP_HIGH_THRESHOLD_LPM		600
-#define TEMP_HIGH_RECOVERY_LPM		460
+#define TEMP_HIGH_THRESHOLD_LPM		580
+#define TEMP_HIGH_RECOVERY_LPM		530
 #define TEMP_LOW_THRESHOLD_LPM		-50
 #define TEMP_LOW_RECOVERY_LPM		0
 #elif defined(CONFIG_SEC_K_PROJECT) || defined(CONFIG_SEC_KACTIVE_PROJECT) || \
 	defined(CONFIG_SEC_LOCALE_CHN)
-#define TEMP_HIGH_THRESHOLD_EVENT	600
-#define TEMP_HIGH_RECOVERY_EVENT		460
+#define TEMP_HIGH_THRESHOLD_EVENT	580
+#define TEMP_HIGH_RECOVERY_EVENT		530
 #define TEMP_LOW_THRESHOLD_EVENT		-50
 #define TEMP_LOW_RECOVERY_EVENT		0
-#define TEMP_HIGH_THRESHOLD_NORMAL	600
-#define TEMP_HIGH_RECOVERY_NORMAL	460
+#define TEMP_HIGH_THRESHOLD_NORMAL	580
+#define TEMP_HIGH_RECOVERY_NORMAL	530
 #define TEMP_LOW_THRESHOLD_NORMAL	-50
 #define TEMP_LOW_RECOVERY_NORMAL	0
-#define TEMP_HIGH_THRESHOLD_LPM		600
-#define TEMP_HIGH_RECOVERY_LPM		460
+#define TEMP_HIGH_THRESHOLD_LPM		580
+#define TEMP_HIGH_RECOVERY_LPM		530
 #define TEMP_LOW_THRESHOLD_LPM		-50
 #define TEMP_LOW_RECOVERY_LPM		0
 #elif defined(CONFIG_MACH_HLTESKT) || defined(CONFIG_MACH_HLTEKTT) || defined(CONFIG_MACH_HLTELGT)
@@ -1400,6 +1436,41 @@ static sec_bat_adc_table_data_t chg_temp_table[] = {
 #define TEMP_LOW_THRESHOLD_LPM		-50
 #define TEMP_LOW_RECOVERY_LPM		0
 #endif
+
+#if defined(CONFIG_BATTERY_SWELLING)
+#if defined(CONFIG_MACH_KACTIVELTE_KOR)
+#define BATT_SWELLING_HIGH_TEMP_BLOCK			450
+#define BATT_SWELLING_HIGH_TEMP_RECOV			400
+#define BATT_SWELLING_LOW_TEMP_BLOCK			100
+#define BATT_SWELLING_LOW_TEMP_RECOV			150
+#define BATT_SWELLING_HIGH_CHG_CURRENT			1400
+#define BATT_SWELLING_LOW_CHG_CURRENT			1000
+#define BATT_SWELLING_DROP_FLOAT_VOLTAGE		4200
+#define BATT_SWELLING_HIGH_RECHG_VOLTAGE		4150
+#define BATT_SWELLING_LOW_RECHG_VOLTAGE			4050
+#elif defined(CONFIG_SEC_K_PROJECT)
+#define BATT_SWELLING_HIGH_TEMP_BLOCK			500
+#define BATT_SWELLING_HIGH_TEMP_RECOV			450
+#define BATT_SWELLING_LOW_TEMP_BLOCK			50
+#define BATT_SWELLING_LOW_TEMP_RECOV			100
+#define BATT_SWELLING_HIGH_CHG_CURRENT			0
+#define BATT_SWELLING_LOW_CHG_CURRENT			1400
+#define BATT_SWELLING_DROP_FLOAT_VOLTAGE		4200
+#define BATT_SWELLING_HIGH_RECHG_VOLTAGE		4150
+#define BATT_SWELLING_LOW_RECHG_VOLTAGE			4050
+#else
+#define BATT_SWELLING_HIGH_TEMP_BLOCK			450
+#define BATT_SWELLING_HIGH_TEMP_RECOV			400
+#define BATT_SWELLING_LOW_TEMP_BLOCK			100
+#define BATT_SWELLING_LOW_TEMP_RECOV			150
+#define BATT_SWELLING_HIGH_CHG_CURRENT			0
+#define BATT_SWELLING_LOW_CHG_CURRENT			0
+#define BATT_SWELLING_DROP_FLOAT_VOLTAGE		4200
+#define BATT_SWELLING_HIGH_RECHG_VOLTAGE		4150
+#define BATT_SWELLING_LOW_RECHG_VOLTAGE			4050
+#endif
+#endif //CONFIG_BATTERY_SWELLING
+
 #endif //CONFIG_BATTERY_SAMSUNG_DATA
 
 #if defined(CONFIG_MACH_MONDRIAN)
@@ -1966,10 +2037,13 @@ void board_battery_init(struct platform_device *pdev, struct sec_battery_info *b
 #if defined(CONFIG_BATTERY_SWELLING)
 	battery->pdata->swelling_high_temp_block = BATT_SWELLING_HIGH_TEMP_BLOCK;
 	battery->pdata->swelling_high_temp_recov = BATT_SWELLING_HIGH_TEMP_RECOV;
-	battery->pdata->swelling_low_temp_blck = BATT_SWELLING_LOW_TEMP_BLOCK;
+	battery->pdata->swelling_low_temp_block = BATT_SWELLING_LOW_TEMP_BLOCK;
 	battery->pdata->swelling_low_temp_recov = BATT_SWELLING_LOW_TEMP_RECOV;
-	battery->pdata->swelling_rechg_voltage = BATT_SWELLING_RECHG_VOLTAGE;
-	battery->pdata->swelling_block_time = BATT_SWELLING_BLOCK_TIME;
+	battery->pdata->swelling_high_chg_current = BATT_SWELLING_HIGH_CHG_CURRENT;
+	battery->pdata->swelling_low_chg_current = BATT_SWELLING_LOW_CHG_CURRENT;
+	battery->pdata->swelling_drop_float_voltage = BATT_SWELLING_DROP_FLOAT_VOLTAGE;
+	battery->pdata->swelling_high_rechg_voltage = BATT_SWELLING_HIGH_RECHG_VOLTAGE;
+	battery->pdata->swelling_low_rechg_voltage = BATT_SWELLING_LOW_RECHG_VOLTAGE;
 #endif
 
 	adc_init_type(pdev, battery);

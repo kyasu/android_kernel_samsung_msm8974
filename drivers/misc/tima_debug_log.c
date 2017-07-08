@@ -11,16 +11,21 @@
 
 #if defined(CONFIG_ARCH_MSM8974PRO)
 #define	DEBUG_LOG_START	(0x07100000)
+#define TIMA_SEC_LOG	(0x07080000)
 #elif defined(CONFIG_ARCH_MSM8974)
 #define DEBUG_LOG_START (0x07300000)
+#define TIMA_SEC_LOG	(0x07280000)
 #elif defined(CONFIG_ARCH_MSM8226_3G_WIFI)
 #if !defined CONFIG_TIMA_RKP
 #define DEBUG_LOG_START (0x0D180000)
+#define	TIMA_SEC_LOG	(0x0D103000)
 #else
 #define DEBUG_LOG_START (0x10400000)
+#define TIMA_SEC_LOG	(0x10380000)
 #endif
 #elif defined(CONFIG_ARCH_MSM8926_LTE)
 #define DEBUG_LOG_START (0x10A00000)
+#define TIMA_SEC_LOG	(0x10980000)
 #endif
 
 #if !defined CONFIG_TIMA_RKP
@@ -30,6 +35,11 @@
 #endif
 #define	DEBUG_LOG_MAGIC	(0xaabbccdd)
 #define	DEBUG_LOG_ENTRY_SIZE	128
+
+#ifdef CONFIG_TIMA_RKP
+#define DEBUG_RKP_LOG_START	DEBUG_LOG_START
+#define SECURE_RKP_LOG_START	TIMA_SEC_LOG 
+#endif
 typedef struct debug_log_entry_s
 {
     uint32_t	timestamp;          /* timestamp at which log entry was made*/
@@ -49,7 +59,12 @@ typedef struct debug_log_header_s
 
 #define DRIVER_DESC   "A kernel module to read tima debug log"
 
+unsigned long *tima_log_addr = 0;
 unsigned long *tima_debug_log_addr = 0;
+#ifdef CONFIG_TIMA_RKP
+unsigned long *tima_debug_rkp_log_addr = 0;
+unsigned long *tima_secure_rkp_log_addr = 0;
+#endif
 
 ssize_t	tima_read(struct file *filep, char __user *buf, size_t size, loff_t *offset)
 {
@@ -58,8 +73,15 @@ ssize_t	tima_read(struct file *filep, char __user *buf, size_t size, loff_t *off
 		printk(KERN_ERR"Extra read\n");
 		return -EINVAL;
 	}
-
-	if (copy_to_user(buf, (const char *)tima_debug_log_addr + (*offset), size)) {
+	if( !strcmp(filep->f_path.dentry->d_iname, "tima_debug_log"))
+		tima_log_addr = tima_debug_log_addr;
+#ifdef CONFIG_TIMA_RKP
+	else if( !strcmp(filep->f_path.dentry->d_iname, "tima_debug_rkp_log"))
+		tima_log_addr = tima_debug_rkp_log_addr;
+	else
+		tima_log_addr = tima_secure_rkp_log_addr;
+#endif
+	if (copy_to_user(buf, (const char *)tima_log_addr + (*offset), size)) {
 		printk(KERN_ERR"Copy to user failed\n");
 		return -1;
 	} else {
@@ -84,14 +106,31 @@ static int __init tima_debug_log_read_init(void)
 		goto error_return;
 	}
         printk(KERN_INFO"tima_debug_log_read_init: Registering /proc/tima_debug_log Interface \n");
-
+#ifdef CONFIG_TIMA_RKP
+	if (proc_create("tima_debug_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
+		printk(KERN_ERR"tima_debug_rkp_log_read_init: Error creating proc entry\n");
+		goto ioremap_failed;
+	}
+	if (proc_create("tima_secure_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
+		printk(KERN_ERR"tima_secure_rkp_log_read_init: Error creating proc entry\n");
+		goto remove_debug_rkp_entry;
+	}
+#endif
 	tima_debug_log_addr = (unsigned long *)ioremap(DEBUG_LOG_START, DEBUG_LOG_SIZE);
+#ifdef CONFIG_TIMA_RKP
+	tima_debug_rkp_log_addr  = (unsigned long *)phys_to_virt(DEBUG_RKP_LOG_START);
+	tima_secure_rkp_log_addr = (unsigned long *)phys_to_virt(SECURE_RKP_LOG_START);
+#endif
 	if (tima_debug_log_addr == NULL) {
 		printk(KERN_ERR"tima_debug_log_read_init: ioremap Failed\n");
 		goto ioremap_failed;
 	}
         return 0;
 
+#ifdef CONFIG_TIMA_RKP
+remove_debug_rkp_entry:
+	remove_proc_entry("tima_debug_rkp_log", NULL);
+#endif
 ioremap_failed:
 	remove_proc_entry("tima_debug_log", NULL);
 error_return:
@@ -108,7 +147,10 @@ static void __exit tima_debug_log_read_exit(void)
 {
         remove_proc_entry("tima_debug_log", NULL);
         printk(KERN_INFO"Deregistering /proc/tima_debug_log Interface\n");
-
+#ifdef CONFIG_TIMA_RKP
+	remove_proc_entry("tima_debug_rkp_log", NULL);
+	remove_proc_entry("tima_secure_rkp_log", NULL);
+#endif
 	if(tima_debug_log_addr != NULL)
 		iounmap(tima_debug_log_addr);
 }

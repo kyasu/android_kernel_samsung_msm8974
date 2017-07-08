@@ -5102,7 +5102,6 @@ int mpq_dmx_write(struct dmx_demux *demux, const char *buf, size_t count)
 }
 EXPORT_SYMBOL(mpq_dmx_write);
 
-static DEFINE_MUTEX(sdmx_load_lock);
 int mpq_sdmx_is_loaded(void)
 {
 	static int sdmx_load_checked;
@@ -5110,12 +5109,10 @@ int mpq_sdmx_is_loaded(void)
 	if (mpq_bypass_sdmx)
 		return 0;
 
-	mutex_lock(&sdmx_load_lock);
 	if (!sdmx_load_checked) {
 		mpq_sdmx_check_app_loaded();
 		sdmx_load_checked = 1;
 	}
-	mutex_unlock(&sdmx_load_lock);
 
 	return mpq_dmx_info.secure_demux_app_loaded;
 }

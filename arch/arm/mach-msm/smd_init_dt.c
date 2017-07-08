@@ -126,7 +126,7 @@ static int msm_smsm_probe(struct platform_device *pdev)
 
 	ret = request_irq(irq_line,
 				private_irq->irq_handler,
-				IRQF_TRIGGER_RISING| IRQF_NO_SUSPEND,
+				IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
 				"smsm_dev",
 				NULL);
 	if (ret < 0) {
@@ -220,6 +220,7 @@ static int msm_smd_probe(struct platform_device *pdev)
 	pilstr = of_get_property(node, key, NULL);
 	if (pilstr)
 		SMD_DBG("%s: %s = %s", __func__, key, pilstr);
+
 	private_intr_config = smd_get_intr_config(edge);
 	if (!private_intr_config) {
 		pr_err("%s: invalid edge\n", __func__);
@@ -235,7 +236,7 @@ static int msm_smd_probe(struct platform_device *pdev)
 
 	ret = request_irq(irq_line,
 				private_irq->irq_handler,
-				IRQF_TRIGGER_RISING| IRQF_NO_SUSPEND,
+				IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
 				"smd_dev",
 				NULL);
 	if (ret < 0) {

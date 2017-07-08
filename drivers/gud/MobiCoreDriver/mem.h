@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,7 +11,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #ifndef _MC_MEM_H_
 #define _MC_MEM_H_
 
@@ -107,6 +106,7 @@ struct mc_mem_context {
 	struct list_head	free_mmu_tables;
 	/* semaphore to synchronize access to above lists */
 	struct mutex		table_lock;
+	atomic_t		table_counter;
 };
 
 /*
