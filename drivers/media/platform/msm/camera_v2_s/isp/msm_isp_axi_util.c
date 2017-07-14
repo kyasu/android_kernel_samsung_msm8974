@@ -356,7 +356,15 @@ int msm_isp_axi_check_stream_state(
 	enum msm_vfe_axi_state valid_state =
 		(stream_cfg_cmd->cmd == START_STREAM) ? INACTIVE : ACTIVE;
 
+	if (stream_cfg_cmd->num_streams > MAX_NUM_STREAM) {
+		return -EINVAL;
+	}
+
 	for (i = 0; i < stream_cfg_cmd->num_streams; i++) {
+		if (HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])
+		> MAX_NUM_STREAM) {
+		    return -EINVAL;
+		}
 		stream_info = &axi_data->stream_info[
 			HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])];
 		spin_lock_irqsave(&stream_info->lock, flags);
@@ -918,7 +926,15 @@ void msm_isp_update_camif_output_count(
 	struct msm_vfe_axi_stream *stream_info;
 	struct msm_vfe_axi_shared_data *axi_data = &vfe_dev->axi_data;
 
+	if (stream_cfg_cmd->num_streams > MAX_NUM_STREAM) {
+		return;
+	}
+
 	for (i = 0; i < stream_cfg_cmd->num_streams; i++) {
+		if (HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])
+		> MAX_NUM_STREAM) {
+			return;
+		}
 		stream_info =
 			&axi_data->stream_info[
 				HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])];
@@ -1233,7 +1249,15 @@ static int msm_isp_start_axi_stream(struct vfe_device *vfe_dev,
 	struct msm_vfe_axi_shared_data *axi_data = &vfe_dev->axi_data;
 	enum msm_vfe_input_src input_src = 0;
 
+	if (stream_cfg_cmd->num_streams > MAX_NUM_STREAM) {
+		return -EINVAL;
+	}
+
 	for (i = 0; i < stream_cfg_cmd->num_streams; i++) {
+		if (HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])
+		> MAX_NUM_STREAM) {
+			return -EINVAL;
+		}
 		stream_info = &axi_data->stream_info[
 			HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])];
 		input_src = SRC_TO_INTF(stream_info->stream_src);
@@ -1298,7 +1322,15 @@ static int msm_isp_stop_axi_stream(struct vfe_device *vfe_dev,
 	uint8_t src_state, wait_for_complete = 0;
 	enum msm_vfe_input_src input_src = 0;
 
+	if (stream_cfg_cmd->num_streams > MAX_NUM_STREAM) {
+		return -EINVAL;
+	}
+
 	for (i = 0; i < stream_cfg_cmd->num_streams; i++) {
+		if (HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])
+		> MAX_NUM_STREAM) {
+			return -EINVAL;
+		}
 		stream_info = &axi_data->stream_info[
 			HANDLE_TO_IDX(stream_cfg_cmd->stream_handle[i])];
 		input_src = SRC_TO_INTF(stream_info->stream_src);
@@ -1388,8 +1420,18 @@ int msm_isp_update_axi_stream(struct vfe_device *vfe_dev, void *arg)
 		return -EBUSY;
 	}
 
+	/*num_stream is uint32 and update_info[] bound by MAX_NUM_STREAM*/
+	if (update_cmd->num_streams > MAX_NUM_STREAM) {
+		return -EINVAL;
+	}
+
 	for (i = 0; i < update_cmd->num_streams; i++) {
 		update_info = &update_cmd->update_info[i];
+		/*check array reference bounds*/
+		if (HANDLE_TO_IDX(update_info->stream_handle)
+		 > MAX_NUM_STREAM) {
+			return -EINVAL;
+		}
 		stream_info = &axi_data->stream_info[
 			HANDLE_TO_IDX(update_info->stream_handle)];
 		if (stream_info->state != ACTIVE &&
