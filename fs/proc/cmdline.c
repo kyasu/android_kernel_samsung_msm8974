@@ -17,6 +17,10 @@ static int cmdline_proc_show(struct seq_file *m, void *v)
 		for(i=0;i<20;i++)	*(temp+i)='*';
 	}
 
+	temp=strstr(temp_saved_command_line, "androidboot.warranty_bit=1");
+	if (temp!=NULL)
+		*(temp+strlen("androidboot.warranty_bit="))='0';
+
 	seq_printf(m, "%s\n", temp_saved_command_line);
 
 	kfree(temp_saved_command_line);
