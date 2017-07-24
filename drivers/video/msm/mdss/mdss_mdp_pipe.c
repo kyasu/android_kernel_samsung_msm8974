@@ -725,19 +725,9 @@ static bool mdss_mdp_check_pipe_in_use(struct mdss_mdp_pipe *pipe)
 			continue;
 
 		mixercfg = mdss_mdp_get_mixercfg(mixer);
-		if (mixercfg & stage_off_mask) {
-			pr_err("IN USE: mixer=%d pipe=%d mcfg:0x%x mask:0x%x\n",
-				mixer->num, pipe->num,
-				mixercfg, stage_off_mask);
-			BUG();
-		}
-	
-		mixer = ctl->mixer_right;
-		mixercfg = mdss_mdp_get_mixercfg(mixer);
-		if (mixercfg & stage_off_mask) {
-			pr_err("IN USE: mixer=%d pipe=%d mcfg:0x%x mask:0x%x\n",
-				mixer->num, pipe->num,
-				mixercfg, stage_off_mask);
+		if ((mixercfg & stage_off_mask) && ctl->play_cnt) {
+			pr_err("BUG. pipe%d is active. mcfg:0x%x mask:0x%x\n",
+				pipe->num, mixercfg, stage_off_mask);
 			BUG();
 		}
 	}
@@ -941,6 +931,7 @@ static int mdss_mdp_image_setup(struct mdss_mdp_pipe *pipe,
 			pipe->num, pipe->img_width, pipe->img_height,
 			pipe->src.x, pipe->src.y, pipe->src.w, pipe->src.h,
 			pipe->dst.x, pipe->dst.y, pipe->dst.w, pipe->dst.h);
+
 	width = pipe->img_width;
 	height = pipe->img_height;
 

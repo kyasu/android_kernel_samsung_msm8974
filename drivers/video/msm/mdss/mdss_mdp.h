@@ -232,9 +232,7 @@ struct mdss_mdp_ctl {
 
 	void *priv_data;
 	u32 wb_type;
-#if defined(CONFIG_MACH_KLIMT)|| defined(CONFIG_MACH_CHAGALL)
 	u64 bw_pending;
-#endif
 };
 
 struct mdss_mdp_mixer {

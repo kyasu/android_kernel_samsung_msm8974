@@ -74,7 +74,7 @@ static void mdss_mdp_wb_free_node(struct mdss_mdp_wb_data *node);
 static inline
 struct mdss_mdp_data *mdss_mdp_wb_debug_buffer(struct msm_fb_data_type *mfd)
 {
-	static struct ion_handle *ihdl = NULL;
+	static struct ion_handle *ihdl;
 	static void *videomemory;
 	static ion_phys_addr_t mdss_wb_mem;
 	static struct mdss_mdp_data mdss_wb_buffer = { .num_planes = 1, };
@@ -95,7 +95,7 @@ struct mdss_mdp_data *mdss_mdp_wb_debug_buffer(struct msm_fb_data_type *mfd)
 				 ION_HEAP(ION_SF_HEAP_ID), 0);
 		if (IS_ERR_OR_NULL(ihdl)) {
 			pr_err("unable to alloc fbmem from ion (%pK)\n", ihdl);
-			return ERR_PTR(PTR_ERR(ihdl));;
+			return NULL;
 		}
 
 		videomemory = ion_map_kernel(iclient, ihdl);
@@ -647,7 +647,7 @@ int mdss_mdp_wb_kickoff(struct msm_fb_data_type *mfd)
 	if (wb_args.data == NULL)
 		wb_args.data = mdss_mdp_wb_debug_buffer(ctl->mfd);
 
-	if (IS_ERR_OR_NULL(wb_args.data)) {
+	if (wb_args.data == NULL) {
 		pr_err("unable to get writeback buf ctl=%d\n", ctl->num);
 		/* drop buffer but don't return error */
 		ret = 0;

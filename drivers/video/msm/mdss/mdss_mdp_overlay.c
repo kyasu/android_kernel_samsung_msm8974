@@ -1025,10 +1025,6 @@ static void mdss_mdp_overlay_cleanup(struct msm_fb_data_type *mfd,
 			__mdss_mdp_overlay_free_list_add(mfd, &pipe->front_buf);
 		mdss_mdp_overlay_free_buf(&pipe->back_buf);
 		list_del_init(&pipe->list);
-		
-		if (recovery_mode) {
-			mdss_mdp_mixer_pipe_unstage(pipe);
-		}
 		mdss_mdp_pipe_destroy(pipe);
 	}
 	mutex_unlock(&mdp5_data->list_lock);
@@ -1307,9 +1303,7 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 	}
 
 	mutex_lock(&mdp5_data->ov_lock);
-#if defined(CONFIG_MACH_KLIMT)|| defined(CONFIG_MACH_CHAGALL)
 	ctl->bw_pending = 0;
-#endif
 	if (mfd->panel_info->type == DTV_PANEL) {
 		ret = mdss_mdp_overlay_start(mfd);
 		if (ret) {
@@ -1317,10 +1311,7 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 						mfd->index, ret);
 			mutex_unlock(&mdp5_data->ov_lock);
 			if (ctl->shared_lock)
-			{
-				mutex_unlock(ctl->wb_lock);
 				mutex_unlock(ctl->shared_lock);
-			}
 			return ret;
 		}
 	}

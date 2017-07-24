@@ -181,18 +181,6 @@ char scenario_name[MAX_mDNIe_MODE][16] = {
 #endif
 };
 
-const char background_name[MAX_BACKGROUND_MODE][10] = {
-	"DYNAMIC",
-#ifndef	MDNIE_LITE_MODE
-	"STANDARD",
-#if !defined(CONFIG_SUPPORT_DISPLAY_OCTA_TFT)
-	"NATURAL",
-#endif
-	"MOVIE",
-	"AUTO",
-#endif /* MDNIE_LITE_MODE */
-};
-
 const char outdoor_name[MAX_OUTDOOR_MODE][20] = {
 	"OUTDOOR_OFF_MODE",
 #ifndef MDNIE_LITE_MODE
@@ -592,12 +580,8 @@ void mDNIe_Set_Mode(void)
 	sending_tuning_cmd();
 	free_tun_cmd();
 
-	DPRINT("mDNIe_Set_Mode end , %s(%d), %s(%d), %s(%d), %s(%d)\n",
-		scenario_name[mdnie_tun_state.scenario], mdnie_tun_state.scenario,
-		background_name[mdnie_tun_state.background], mdnie_tun_state.background,
-		outdoor_name[mdnie_tun_state.outdoor], mdnie_tun_state.outdoor,
-		accessibility_name[mdnie_tun_state.accessibility], mdnie_tun_state.accessibility);
-
+	DPRINT("mDNIe_Set_Mode end , background(%d)\n",
+		mdnie_tun_state.background);
 }
 
 void is_play_speed_1_5(int enable)
@@ -615,45 +599,40 @@ void is_play_speed_1_5(int enable)
  * #
  * #	0. Dynamic
  * #	1. Standard
- * #	2. Video
- * #	3. Natural
+ * #	2. Natural
+ * #	3. Movie
+ * #	4. Auto
  * #
  * ##########################################################*/
 
 static ssize_t mode_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	DPRINT("Current Background Mode : %s\n",
-		background_name[mdnie_tun_state.background]);
-
-	return snprintf(buf, 256, "Current Background Mode : %s\n",
-		background_name[mdnie_tun_state.background]);
+	return snprintf(buf, 256, "%d\n", mdnie_tun_state.background);
 }
 
 static ssize_t mode_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
 	int value;
-	int backup;
 
 	sscanf(buf, "%d", &value);
+	DPRINT("set background mode : %d\n", value);
 
 	if (value < DYNAMIC_MODE || value >= MAX_BACKGROUND_MODE) {
 		DPRINT("[ERROR] wrong backgound mode value : %d\n",
 			value);
 		return size;
 	}
-	backup = mdnie_tun_state.background;
-	if(mdnie_tun_state.background == value)
-		return size;
+
 	mdnie_tun_state.background = value;
 
 	if (mdnie_tun_state.accessibility == NEGATIVE) {
 		DPRINT("already negative mode(%d), do not set background(%d)\n",
 			mdnie_tun_state.accessibility, mdnie_tun_state.background);
 	} else {
-		DPRINT(" %s : (%s) -> (%s)\n",
-			__func__, background_name[backup], background_name[mdnie_tun_state.background]);
+		DPRINT(" %s, input background(%d)\n",
+				__func__, value);
 
 		mDNIe_Set_Mode();
 	}
@@ -662,6 +641,15 @@ static ssize_t mode_store(struct device *dev,
 }
 
 static DEVICE_ATTR(mode, 0664, mode_show, mode_store);
+
+
+static ssize_t mode_max_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", MAX_BACKGROUND_MODE);
+}
+
+static DEVICE_ATTR(mode_max, S_IRUGO, mode_max_show, NULL);
 
 static ssize_t scenario_show(struct device *dev,
 					 struct device_attribute *attr,
@@ -790,8 +778,7 @@ static ssize_t outdoor_show(struct device *dev,
 	DPRINT("Current outdoor Mode : %s\n",
 		outdoor_name[mdnie_tun_state.outdoor]);
 
-	return snprintf(buf, 256, "Current outdoor Mode : %s\n",
-		outdoor_name[mdnie_tun_state.outdoor]);
+	return snprintf(buf, 256, "%d\n", mdnie_tun_state.outdoor);
 }
 
 static ssize_t outdoor_store(struct device *dev,
@@ -1215,7 +1202,7 @@ static void load_tuning_file(char *filename)
 	filp = filp_open(filename, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
 		printk(KERN_ERR "%s File open failed\n", __func__);
-		return;
+		goto err;
 	}
 
 	l = filp->f_path.dentry->d_inode->i_size;
@@ -1225,7 +1212,7 @@ static void load_tuning_file(char *filename)
 	if (dp == NULL) {
 		pr_info("Can't not alloc memory for tuning file load\n");
 		filp_close(filp, current->files);
-		return;
+		goto err;
 	}
 	pos = 0;
 	memset(dp, 0, l);
@@ -1238,7 +1225,7 @@ static void load_tuning_file(char *filename)
 		pr_info("vfs_read() filed ret : %d\n", ret);
 		kfree(dp);
 		filp_close(filp, current->files);
-		return;
+		goto err;
 	}
 
 	filp_close(filp, current->files);
@@ -1248,6 +1235,10 @@ static void load_tuning_file(char *filename)
 	sending_tune_cmd(dp, l);
 
 	kfree(dp);
+
+	return;
+err:
+	set_fs(fs);
 }
 
 static ssize_t tuning_show(struct device *dev,
@@ -1331,6 +1322,11 @@ void init_mdnie_class(void)
 		(tune_mdnie_dev, &dev_attr_mode) < 0)
 		pr_err("Failed to create device file(%s)!\n",
 			dev_attr_mode.attr.name);
+
+	if (device_create_file
+		(tune_mdnie_dev, &dev_attr_mode_max) < 0)
+		pr_err("Failed to create device file(%s)!\n",
+			dev_attr_mode_max.attr.name);
 
 	if (device_create_file
 		(tune_mdnie_dev, &dev_attr_outdoor) < 0)
@@ -1692,28 +1688,34 @@ void mDNIe_Set_Mode(enum Lcd_mDNIe_UI mode)
 	switch (mode) {
 	case mDNIe_UI_MODE:
 		DPRINT(" = UI MODE =\n");
-		if (mdnie_tun_state.background == STANDARD_MODE) {
-			DPRINT(" = STANDARD MODE =\n");
-			INPUT_PAYLOAD1(STANDARD_UI_1);
-			INPUT_PAYLOAD2(STANDARD_UI_2);
+		if (mdnie_tun_state.outdoor == OUTDOOR_ON_MODE) {
+			DPRINT(" = OUTDOOR ON MODE =\n");
+			INPUT_PAYLOAD1(OUTDOOR_UI_1);
+			INPUT_PAYLOAD2(OUTDOOR_UI_2);
+		} else if (mdnie_tun_state.outdoor == OUTDOOR_OFF_MODE) {
+			if (mdnie_tun_state.background == STANDARD_MODE) {
+				DPRINT(" = STANDARD MODE =\n");
+				INPUT_PAYLOAD1(STANDARD_UI_1);
+				INPUT_PAYLOAD2(STANDARD_UI_2);
 #if !defined(CONFIG_SUPPORT_DISPLAY_OCTA_TFT)
-		} else if (mdnie_tun_state.background == NATURAL_MODE) {
-			DPRINT(" = NATURAL MODE =\n");
-			INPUT_PAYLOAD1(NATURAL_UI_1);
-			INPUT_PAYLOAD2(NATURAL_UI_2);
+			} else if (mdnie_tun_state.background == NATURAL_MODE) {
+				DPRINT(" = NATURAL MODE =\n");
+				INPUT_PAYLOAD1(NATURAL_UI_1);
+				INPUT_PAYLOAD2(NATURAL_UI_2);
 #endif
-		} else if (mdnie_tun_state.background == DYNAMIC_MODE) {
-			DPRINT(" = DYNAMIC MODE =\n");
-			INPUT_PAYLOAD1(DYNAMIC_UI_1);
-			INPUT_PAYLOAD2(DYNAMIC_UI_2);
-		} else if (mdnie_tun_state.background == MOVIE_MODE) {
-			DPRINT(" = MOVIE MODE =\n");
-			INPUT_PAYLOAD1(MOVIE_UI_1);
-			INPUT_PAYLOAD2(MOVIE_UI_2);
-		} else if (mdnie_tun_state.background == AUTO_MODE) {
-			DPRINT(" = AUTO MODE =\n");
-			INPUT_PAYLOAD1(AUTO_UI_1);
-			INPUT_PAYLOAD2(AUTO_UI_2);
+			} else if (mdnie_tun_state.background == DYNAMIC_MODE) {
+				DPRINT(" = DYNAMIC MODE =\n");
+				INPUT_PAYLOAD1(DYNAMIC_UI_1);
+				INPUT_PAYLOAD2(DYNAMIC_UI_2);
+			} else if (mdnie_tun_state.background == MOVIE_MODE) {
+				DPRINT(" = MOVIE MODE =\n");
+				INPUT_PAYLOAD1(MOVIE_UI_1);
+				INPUT_PAYLOAD2(MOVIE_UI_2);
+			} else if (mdnie_tun_state.background == AUTO_MODE) {
+				DPRINT(" = AUTO MODE =\n");
+				INPUT_PAYLOAD1(AUTO_UI_1);
+				INPUT_PAYLOAD2(AUTO_UI_2);
+			}
 		}
 		break;
 

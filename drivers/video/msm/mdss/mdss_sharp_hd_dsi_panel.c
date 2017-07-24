@@ -731,7 +731,7 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		if (dchdr->dlen > len) {
 			pr_err("%s: dtsi cmd=%x error, len=%d",
 				__func__, dchdr->dtype, dchdr->dlen);
-			goto exit_free;
+			return -ENOMEM;
 		}
 		bp += sizeof(*dchdr);
 		len -= sizeof(*dchdr);
@@ -743,13 +743,16 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 	if (len != 0) {
 		pr_err("%s: dcs_cmd=%x len=%d error!",
 				__func__, buf[0], blen);
-		goto exit_free;
+		kfree(buf);
+		return -ENOMEM;
 	}
 
 	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
 						GFP_KERNEL);
-	if (!pcmds->cmds)
-		goto exit_free;
+	if (!pcmds->cmds){
+		kfree(buf);
+		return -ENOMEM;
+	}
 
 	pcmds->cmd_cnt = cnt;
 	pcmds->buf = buf;
@@ -777,9 +780,6 @@ static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		pcmds->buf[0], pcmds->blen, pcmds->cmd_cnt, pcmds->link_state);
 
 	return 0;
-exit_free:
-	kfree(buf);
-	return -ENOMEM;
 }
 int mdss_panel_dt_get_dst_fmt(u32 bpp, char mipi_mode, u32 pixel_packing,
 				char *dst_format)

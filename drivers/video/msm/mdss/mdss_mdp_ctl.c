@@ -705,7 +705,6 @@ int mdss_mdp_perf_bw_check(struct mdss_mdp_ctl *ctl,
 		struct mdss_mdp_pipe **left_plist, int left_cnt,
 		struct mdss_mdp_pipe **right_plist, int right_cnt)
 {
-#if defined(CONFIG_MACH_KLIMT)|| defined(CONFIG_MACH_CHAGALL)
 	struct mdss_data_type *mdata = ctl->mdata;
 	struct mdss_mdp_perf_params perf;
 	u32 bw, threshold, i;
@@ -737,29 +736,7 @@ int mdss_mdp_perf_bw_check(struct mdss_mdp_ctl *ctl,
 		pr_debug("exceeds bandwidth: %ukb > %ukb\n", bw, threshold);
 		return -E2BIG;
 	}
-#else
-	struct mdss_data_type *mdata = ctl->mdata;
-	struct mdss_mdp_perf_params perf;
-	u32 bw, threshold;
 
-	/* we only need bandwidth check on real-time clients (interfaces) */
-	if (ctl->intf_type == MDSS_MDP_NO_INTF)
-		return 0;
-
-	__mdss_mdp_perf_calc_ctl_helper(ctl, &perf,
-			left_plist, left_cnt, right_plist, right_cnt);
-
-
-	/* convert bandwidth to kb */
-	bw = DIV_ROUND_UP_ULL(perf.bw_ctl, 1000);
-	pr_debug("calculated bandwidth=%uk\n", bw);
-
-	threshold = ctl->is_video_mode ? mdata->max_bw_low : mdata->max_bw_high;
-	if (bw > threshold) {
-		pr_debug("exceeds bandwidth: %ukb > %ukb\n", bw, threshold);
-		return -E2BIG;
-	}
-#endif
 	return 0;
 }
 
