@@ -452,7 +452,7 @@ static void bmg160_work_func(struct work_struct *work)
 	struct bmg160_p *data = container_of(work, struct bmg160_p, work);
 
 	delay = ktime_to_ns(data->poll_delay);
-	time_spec = ktime_to_timespec(alarm_get_elapsed_realtime());
+	get_monotonic_boottime(&time_spec);
 	ts_new = time_spec.tv_sec * 1000000000ULL + time_spec.tv_nsec;
 	ts_shift = delay >> 1;
 	ts = 0ULL;

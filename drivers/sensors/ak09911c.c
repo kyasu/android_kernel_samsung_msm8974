@@ -285,7 +285,7 @@ static void ak09911c_work_func(struct work_struct *work)
 			struct ak09911c_p, work);
 
 	delay = atomic_read(&data->delay);
-	time_spec = ktime_to_timespec(alarm_get_elapsed_realtime());
+	get_monotonic_boottime(&time_spec);
 	ts_new = time_spec.tv_sec * 1000000000ULL + time_spec.tv_nsec;
 	ts_shift = delay >> 1;
 	ts = 0ULL;
