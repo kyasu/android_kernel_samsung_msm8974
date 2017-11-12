@@ -225,9 +225,12 @@ static void pen_insert_work(struct work_struct *work)
 	dev_info(&wac_i2c->client->dev, "%s: pen %s\n",
 		__func__, wac_i2c->pen_insert ? "instert" : "remove");
 
-	input_report_switch(wac_i2c->input_dev,
-		SW_PEN_INSERT, !wac_i2c->pen_insert);
-	input_sync(wac_i2c->input_dev);
+	if (!wac_i2c->pen_insert) {
+		input_report_key(wac_i2c->input_dev, KEY_WAKEUP, 1);
+		input_sync(wac_i2c->input_dev);
+		input_report_key(wac_i2c->input_dev, KEY_WAKEUP, 0);
+		input_sync(wac_i2c->input_dev);
+	}
 
 #ifdef BATTERY_SAVING_MODE
 	if (wac_i2c->pen_insert) {
@@ -284,8 +287,6 @@ static void wacom_i2c_set_input_values(struct i2c_client *client,
 	input_dev->dev.parent = &client->dev;
 	input_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 
-	input_dev->evbit[0] |= BIT_MASK(EV_SW);
-	input_set_capability(input_dev, EV_SW, SW_PEN_INSERT);
 #ifdef WACOM_PEN_DETECT
 	input_dev->open = wacom_i2c_input_open;
 	input_dev->close = wacom_i2c_input_close;
@@ -300,6 +301,7 @@ static void wacom_i2c_set_input_values(struct i2c_client *client,
 	__set_bit(BTN_STYLUS, input_dev->keybit);
 	__set_bit(KEY_UNKNOWN, input_dev->keybit);
 	__set_bit(KEY_PEN_PDCT, input_dev->keybit);
+	__set_bit(KEY_WAKEUP, input_dev->keybit);
 #ifdef WACOM_USE_GAIN
 	__set_bit(ABS_DISTANCE, input_dev->absbit);
 #endif
@@ -1586,6 +1588,10 @@ static int wacom_i2c_probe(struct i2c_client *client,
 	mutex_init(&wac_i2c->lock);
 #if defined(CONFIG_SEC_LT03_PROJECT) || defined(CONFIG_SEC_VIENNA_PROJECT)
 	mutex_init(&wac_i2c->irq_lock);
+#endif
+
+#ifdef BATTERY_SAVING_MODE
+	wac_i2c->battery_saving_mode = true;
 #endif
 
 #ifdef WACOM_BOOSTER
