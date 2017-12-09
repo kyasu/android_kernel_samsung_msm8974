@@ -362,12 +362,11 @@ struct cypress_touchkey_info {
 
 	u8	touchkeyid;
 	bool	support_fw_update;
+#ifdef TK_KEYPAD_ENABLE
+	atomic_t	keypad_enable;
+#endif
 	bool	do_checksum;
 	struct wake_lock fw_wakelock;
-
-#ifdef TK_KEYPAD_ENABLE
-	atomic_t keypad_enable;
-#endif
 };
 
 #ifdef TK_INFORM_CHARGER

@@ -1578,16 +1578,11 @@ static ssize_t sec_keypad_enable_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct cypress_touchkey_info *info = dev_get_drvdata(dev);
-	unsigned int val;
 	int i;
 
-	if (sysfs_streq(buf, "0"))
-		val = 0;
-	else if (sysfs_streq(buf, "1"))
-		val = 1;
-	else
-		return -EINVAL;
-
+	unsigned int val = 0;
+	sscanf(buf, "%d", &val);
+	val = (val == 0 ? 0 : 1);
 	atomic_set(&info->keypad_enable, val);
 	if (val) {
 		for (i = 0; i < ARRAY_SIZE(info->keycode); i++)
@@ -1600,8 +1595,10 @@ static ssize_t sec_keypad_enable_store(struct device *dev,
 
 	return count;
 }
-#endif
 
+static DEVICE_ATTR(keypad_enable, S_IRUGO|S_IWUSR, sec_keypad_enable_show,
+	      sec_keypad_enable_store);
+#endif
 static DEVICE_ATTR(touchkey_firm_update_status, S_IRUGO | S_IWUSR | S_IWGRP,
 		cypress_touchkey_firm_status_show, NULL);
 static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO,
@@ -1665,12 +1662,10 @@ static DEVICE_ATTR(boost_level,
 		   S_IWUSR | S_IWGRP, NULL, boost_level_store);
 #endif
 
-#ifdef TK_KEYPAD_ENABLE
-static DEVICE_ATTR(keypad_enable, S_IRUGO|S_IWUSR, sec_keypad_enable_show,
-		sec_keypad_enable_store);
-#endif
-
 static struct attribute *touchkey_attributes[] = {
+#ifdef TK_KEYPAD_ENABLE
+	&dev_attr_keypad_enable.attr,
+#endif
 	&dev_attr_touchkey_firm_update_status.attr,
 	&dev_attr_touchkey_firm_version_panel.attr,
 	&dev_attr_touchkey_firm_version_phone.attr,
@@ -1705,9 +1700,6 @@ static struct attribute *touchkey_attributes[] = {
 #endif
 #ifdef TSP_BOOSTER
 	&dev_attr_boost_level.attr,
-#endif
-#ifdef TK_KEYPAD_ENABLE
-	&dev_attr_keypad_enable.attr,
 #endif
 	NULL,
 };
