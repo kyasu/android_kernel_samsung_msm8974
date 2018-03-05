@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013,2015 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2015, 2017 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -417,7 +417,7 @@ static struct {
 	int	user_cal_read;
 	int	user_cal_available;
 	u32	user_cal_rcvd;
-	int	user_cal_exp_size;
+	u32	user_cal_exp_size;
 	int	iris_xo_mode_set;
 	int	fw_vbatt_state;
 	int	ctrl_device_opened;
@@ -2799,7 +2799,7 @@ static ssize_t wcnss_wlan_write(struct file *fp, const char __user
 	mutex_lock(&penv->dev_lock);
 	if ((UINT32_MAX - count < penv->user_cal_rcvd) ||
 	     (penv->user_cal_exp_size < count + penv->user_cal_rcvd)) {
-		pr_err(DEVICE " invalid size to write %d\n", count +
+		pr_err(DEVICE " invalid size to write %zu\n", count +
 				penv->user_cal_rcvd);
 		mutex_unlock(&penv->dev_lock);
 		return -ENOMEM;
@@ -2829,6 +2829,10 @@ static ssize_t wcnss_wlan_write(struct file *fp, const char __user
 	return rc;
 }
 
+static int wcnss_node_release(struct inode *inode, struct file *file)
+{
+	return 0;
+}
 
 static int wcnss_notif_cb(struct notifier_block *this, unsigned long code,
 				void *ss_handle)
