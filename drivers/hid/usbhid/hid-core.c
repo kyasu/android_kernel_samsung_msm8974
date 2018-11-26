@@ -203,7 +203,7 @@ static int usbhid_restart_out_queue(struct usbhid_device *usbhid)
 		return 0;
 
 	if ((kicked = (usbhid->outhead != usbhid->outtail))) {
-		dbg("Kicking head %d tail %d", usbhid->outhead, usbhid->outtail);
+		hid_dbg(hid, "Kicking head %d tail %d", usbhid->outhead, usbhid->outtail);
 
 		r = usb_autopm_get_interface_async(usbhid->intf);
 		if (r < 0)
@@ -230,7 +230,7 @@ static int usbhid_restart_ctrl_queue(struct usbhid_device *usbhid)
 		return 0;
 
 	if ((kicked = (usbhid->ctrlhead != usbhid->ctrltail))) {
-		dbg("Kicking head %d tail %d", usbhid->ctrlhead, usbhid->ctrltail);
+		hid_dbg(hid, "Kicking head %d tail %d", usbhid->ctrlhead, usbhid->ctrltail);
 
 		r = usb_autopm_get_interface_async(usbhid->intf);
 		if (r < 0)
@@ -1563,28 +1563,15 @@ static struct usb_driver hid_driver = {
 	.supports_autosuspend = 1,
 };
 
-static const struct hid_device_id hid_usb_table[] = {
-	{ HID_USB_DEVICE(HID_ANY_ID, HID_ANY_ID) },
-	{ }
-};
-
 struct usb_interface *usbhid_find_interface(int minor)
 {
 	return usb_find_interface(&hid_driver, minor);
 }
 
-static struct hid_driver hid_usb_driver = {
-	.name = "generic-usb",
-	.id_table = hid_usb_table,
-};
-
 static int __init hid_init(void)
 {
 	int retval = -ENOMEM;
 
-	retval = hid_register_driver(&hid_usb_driver);
-	if (retval)
-		goto hid_register_fail;
 	retval = usbhid_quirks_init(quirks_param);
 	if (retval)
 		goto usbhid_quirks_init_fail;
@@ -1597,8 +1584,6 @@ static int __init hid_init(void)
 usb_register_fail:
 	usbhid_quirks_exit();
 usbhid_quirks_init_fail:
-	hid_unregister_driver(&hid_usb_driver);
-hid_register_fail:
 	return retval;
 }
 
@@ -1606,7 +1591,6 @@ static void __exit hid_exit(void)
 {
 	usb_deregister(&hid_driver);
 	usbhid_quirks_exit();
-	hid_unregister_driver(&hid_usb_driver);
 }
 
 module_init(hid_init);
