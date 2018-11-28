@@ -139,9 +139,13 @@ enum ctattr_tstamp {
 
 enum ctattr_nat {
 	CTA_NAT_UNSPEC,
-	CTA_NAT_MINIP,
-	CTA_NAT_MAXIP,
+	CTA_NAT_V4_MINIP,
+#define CTA_NAT_MINIP CTA_NAT_V4_MINIP
+	CTA_NAT_V4_MAXIP,
+#define CTA_NAT_MAXIP CTA_NAT_V4_MAXIP
 	CTA_NAT_PROTO,
+	CTA_NAT_V6_MINIP,
+	CTA_NAT_V6_MAXIP,
 	__CTA_NAT_MAX
 };
 #define CTA_NAT_MAX (__CTA_NAT_MAX - 1)
@@ -191,6 +195,7 @@ enum ctattr_expect_nat {
 enum ctattr_help {
 	CTA_HELP_UNSPEC,
 	CTA_HELP_NAME,
+	CTA_HELP_INFO,
 	__CTA_HELP_MAX
 };
 #define CTA_HELP_MAX (__CTA_HELP_MAX - 1)

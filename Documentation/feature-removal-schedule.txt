@@ -361,14 +361,6 @@ Why:	Internal alias support has been present in module-init-tools for some
 
 Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
----------------------------
-
-What:	xt_NOTRACK
-Files:	net/netfilter/xt_NOTRACK.c
-When:	April 2011
-Why:	Superseded by xt_CT
-Who:	Netfilter developer team <netfilter-devel@vger.kernel.org>
-
 ----------------------------
 
 What:	IRQF_DISABLED
@@ -404,13 +396,6 @@ Why:	The adm9240, w83792d and w83793 hardware monitoring drivers have
 	interface has been added to each driver, so the legacy interface
 	can be removed.
 Who:	Jean Delvare <khali@linux-fr.org>
-
-----------------------------
-
-What:	xt_connlimit rev 0
-When:	2012
-Who:	Jan Engelhardt <jengelh@medozas.de>
-Files:	net/netfilter/xt_connlimit.c
 
 ----------------------------
 

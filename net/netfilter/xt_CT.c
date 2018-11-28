@@ -17,7 +17,6 @@
 #include <net/netfilter/nf_conntrack_l4proto.h>
 #include <net/netfilter/nf_conntrack_helper.h>
 #include <net/netfilter/nf_conntrack_ecache.h>
-#include <net/netfilter/nf_conntrack_l4proto.h>
 #include <net/netfilter/nf_conntrack_timeout.h>
 #include <net/netfilter/nf_conntrack_zones.h>
 
@@ -113,6 +112,8 @@ static int xt_ct_tg_check_v0(const struct xt_tgchk_param *par)
 		goto err3;
 
 	if (info->helper[0]) {
+		struct nf_conntrack_helper *helper;
+
 		ret = -ENOENT;
 		proto = xt_ct_find_proto(par);
 		if (!proto) {
@@ -121,19 +122,21 @@ static int xt_ct_tg_check_v0(const struct xt_tgchk_param *par)
 			goto err3;
 		}
 
-		ret = -ENOMEM;
-		help = nf_ct_helper_ext_add(ct, GFP_KERNEL);
-		if (help == NULL)
-			goto err3;
-
 		ret = -ENOENT;
-		help->helper = nf_conntrack_helper_try_module_get(info->helper,
-								  par->family,
-								  proto);
-		if (help->helper == NULL) {
+		helper = nf_conntrack_helper_try_module_get(info->helper,
+							    par->family,
+							    proto);
+		if (helper == NULL) {
 			pr_info("No such helper \"%s\"\n", info->helper);
 			goto err3;
 		}
+
+		ret = -ENOMEM;
+		help = nf_ct_helper_ext_add(ct, helper, GFP_KERNEL);
+		if (help == NULL)
+			goto err3;
+
+		help->helper = helper;
 	}
 
 	__set_bit(IPS_TEMPLATE_BIT, &ct->status);
@@ -203,6 +206,8 @@ static int xt_ct_tg_check_v1(const struct xt_tgchk_param *par)
 		goto err3;
 
 	if (info->helper[0]) {
+		struct nf_conntrack_helper *helper;
+
 		ret = -ENOENT;
 		proto = xt_ct_find_proto(par);
 		if (!proto) {
@@ -211,19 +216,21 @@ static int xt_ct_tg_check_v1(const struct xt_tgchk_param *par)
 			goto err3;
 		}
 
-		ret = -ENOMEM;
-		help = nf_ct_helper_ext_add(ct, GFP_KERNEL);
-		if (help == NULL)
-			goto err3;
-
 		ret = -ENOENT;
-		help->helper = nf_conntrack_helper_try_module_get(info->helper,
-								  par->family,
-								  proto);
-		if (help->helper == NULL) {
+		helper = nf_conntrack_helper_try_module_get(info->helper,
+							    par->family,
+							    proto);
+		if (helper == NULL) {
 			pr_info("No such helper \"%s\"\n", info->helper);
 			goto err3;
 		}
+
+		ret = -ENOMEM;
+		help = nf_ct_helper_ext_add(ct, helper, GFP_KERNEL);
+		if (help == NULL)
+			goto err3;
+
+		help->helper = helper;
 	}
 
 #ifdef CONFIG_NF_CONNTRACK_TIMEOUT
@@ -378,14 +385,60 @@ static struct xt_target xt_ct_tg_reg[] __read_mostly = {
 	},
 };
 
+static unsigned int
+notrack_tg(struct sk_buff *skb, const struct xt_action_param *par)
+{
+	/* Previously seen (loopback)? Ignore. */
+	if (skb->nfct != NULL)
+		return XT_CONTINUE;
+
+	skb->nfct = &nf_ct_untracked_get()->ct_general;
+	skb->nfctinfo = IP_CT_NEW;
+	nf_conntrack_get(skb->nfct);
+
+	return XT_CONTINUE;
+}
+
+static int notrack_chk(const struct xt_tgchk_param *par)
+{
+	if (!par->net->xt.notrack_deprecated_warning) {
+		pr_info("netfilter: NOTRACK target is deprecated, "
+			"use CT instead or upgrade iptables\n");
+		par->net->xt.notrack_deprecated_warning = true;
+	}
+	return 0;
+}
+
+static struct xt_target notrack_tg_reg __read_mostly = {
+	.name		= "NOTRACK",
+	.revision	= 0,
+	.family		= NFPROTO_UNSPEC,
+	.checkentry	= notrack_chk,
+	.target		= notrack_tg,
+	.table		= "raw",
+	.me		= THIS_MODULE,
+};
+
 static int __init xt_ct_tg_init(void)
 {
-	return xt_register_targets(xt_ct_tg_reg, ARRAY_SIZE(xt_ct_tg_reg));
+	int ret;
+
+	ret = xt_register_target(&notrack_tg_reg);
+	if (ret < 0)
+		return ret;
+
+	ret = xt_register_targets(xt_ct_tg_reg, ARRAY_SIZE(xt_ct_tg_reg));
+	if (ret < 0) {
+		xt_unregister_target(&notrack_tg_reg);
+		return ret;
+	}
+	return 0;
 }
 
 static void __exit xt_ct_tg_exit(void)
 {
 	xt_unregister_targets(xt_ct_tg_reg, ARRAY_SIZE(xt_ct_tg_reg));
+	xt_unregister_target(&notrack_tg_reg);
 }
 
 module_init(xt_ct_tg_init);
@@ -395,3 +448,5 @@ MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Xtables: connection tracking target");
 MODULE_ALIAS("ipt_CT");
 MODULE_ALIAS("ip6t_CT");
+MODULE_ALIAS("ipt_NOTRACK");
+MODULE_ALIAS("ip6t_NOTRACK");
