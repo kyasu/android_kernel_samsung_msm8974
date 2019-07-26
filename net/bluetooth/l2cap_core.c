@@ -3505,16 +3505,22 @@ static int l2cap_parse_conf_req(struct sock *sk, void *data, size_t data_size)
 
 	while (len >= L2CAP_CONF_OPT_SIZE) {
 		len -= l2cap_get_conf_opt(&req, &type, &olen, &val);
+		if (len < 0)
+			break;
 
 		hint  = type & L2CAP_CONF_HINT;
 		type &= L2CAP_CONF_MASK;
 
 		switch (type) {
 		case L2CAP_CONF_MTU:
+			if (olen != 2)
+				break;
 			mtu = val;
 			break;
 
 		case L2CAP_CONF_FLUSH_TO:
+			if (olen != 2)
+				break;
 			pi->flush_to = val;
 			if (pi->conf_state & L2CAP_CONF_LOCKSTEP)
 				result = L2CAP_CONF_UNACCEPT;
@@ -3528,11 +3534,14 @@ static int l2cap_parse_conf_req(struct sock *sk, void *data, size_t data_size)
 			break;
 
 		case L2CAP_CONF_RFC:
-			if (olen == sizeof(rfc))
-				memcpy(&rfc, (void *) val, olen);
+			if (olen != sizeof(rfc))
+				break;
+			memcpy(&rfc, (void *) val, olen);
 			break;
 
 		case L2CAP_CONF_FCS:
+			if (olen != 1)
+				break;
 			if (val == L2CAP_FCS_NONE)
 				pi->conf_state |= L2CAP_CONF_NO_FCS_RECV;
 			pi->remote_conf.fcs = val;
@@ -3745,23 +3754,26 @@ static int l2cap_parse_amp_move_reconf_req(struct sock *sk, void *data, size_t d
 			break;
 
 		case L2CAP_CONF_RFC:
-			if (olen == sizeof(rfc))
-				memcpy(&rfc, (void *) val, olen);
+			if (olen != sizeof(rfc))
+				break;
+			memcpy(&rfc, (void *) val, olen);
 			break;
 
 		case L2CAP_CONF_FCS:
+			if (olen != 1)
+				break;
 			pi->remote_conf.fcs = val;
 			break;
 
 		case L2CAP_CONF_EXT_FS:
-			if (olen == sizeof(fs)) {
-				memcpy(&fs, (void *) val, olen);
-				if (fs.type != L2CAP_SERVICE_BEST_EFFORT)
-					result = L2CAP_CONF_FLOW_SPEC_REJECT;
-				else {
-					pi->remote_conf.flush_to =
-						le32_to_cpu(fs.flush_to);
-				}
+			if (olen != sizeof(fs))
+				break;
+			memcpy(&fs, (void *) val, olen);
+			if (fs.type != L2CAP_SERVICE_BEST_EFFORT)
+				result = L2CAP_CONF_FLOW_SPEC_REJECT;
+			else {
+				pi->remote_conf.flush_to =
+					le32_to_cpu(fs.flush_to);
 			}
 			break;
 
@@ -3772,7 +3784,6 @@ static int l2cap_parse_amp_move_reconf_req(struct sock *sk, void *data, size_t d
 		default:
 			if (hint)
 				break;
-
 			result = L2CAP_CONF_UNKNOWN;
 			*((u8 *) ptr++) = type;
 			break;
@@ -3853,38 +3864,47 @@ static int l2cap_parse_conf_rsp(struct sock *sk, void *rsp, int len, void *data,
 
 	while (len >= L2CAP_CONF_OPT_SIZE) {
 		len -= l2cap_get_conf_opt(&rsp, &type, &olen, &val);
+		if (len < 0)
+			break;
 
 		switch (type) {
 		case L2CAP_CONF_MTU:
+			if (olen != 2)
+				break;
 			if (val < L2CAP_DEFAULT_MIN_MTU) {
 				*result = L2CAP_CONF_UNACCEPT;
 				pi->imtu = L2CAP_DEFAULT_MIN_MTU;
 			} else
 				pi->imtu = val;
-			l2cap_add_conf_opt(&ptr, L2CAP_CONF_MTU, 2, pi->imtu, endptr - ptr);
+			l2cap_add_conf_opt(&ptr, L2CAP_CONF_MTU, 2, pi->imtu,
+					   endptr - ptr);
 			break;
 
 		case L2CAP_CONF_FLUSH_TO:
+			if (olen != 2)
+				break;
 			pi->flush_to = val;
-			l2cap_add_conf_opt(&ptr, L2CAP_CONF_FLUSH_TO,
-							2, pi->flush_to, endptr - ptr);
+			l2cap_add_conf_opt(&ptr, L2CAP_CONF_FLUSH_TO, 2,
+					   pi->flush_to, endptr - ptr);
 			break;
 
 		case L2CAP_CONF_RFC:
-			if (olen == sizeof(rfc))
-				memcpy(&rfc, (void *)val, olen);
-
+			if (olen != sizeof(rfc))
+				break;
+			memcpy(&rfc, (void *)val, olen);
 			if ((pi->conf_state & L2CAP_CONF_STATE2_DEVICE) &&
 							rfc.mode != pi->mode)
 				return -ECONNREFUSED;
 
 			pi->fcs = 0;
 
-			l2cap_add_conf_opt(&ptr, L2CAP_CONF_RFC,
-					sizeof(rfc), (unsigned long) &rfc, endptr - ptr);
+			l2cap_add_conf_opt(&ptr, L2CAP_CONF_RFC, sizeof(rfc),
+					   (unsigned long) &rfc, endptr - ptr);
 			break;
 
 		case L2CAP_CONF_EXT_WINDOW:
+			if (olen != 2)
+				break;
 			pi->ack_win = min_t(u16, val, pi->ack_win);
 
 			l2cap_add_conf_opt(&ptr, L2CAP_CONF_EXT_WINDOW,
@@ -3959,13 +3979,18 @@ static void l2cap_conf_rfc_get(struct sock *sk, void *rsp, int len)
 
 	while (len >= L2CAP_CONF_OPT_SIZE) {
 		len -= l2cap_get_conf_opt(&rsp, &type, &olen, &val);
+		if (len < 0)
+			break;
 
 		switch (type) {
 		case L2CAP_CONF_RFC:
-			if (olen == sizeof(rfc))
-				memcpy(&rfc, (void *)val, olen);
+			if (olen != sizeof(rfc))
+				break;
+			memcpy(&rfc, (void *)val, olen);
 			break;
 		case L2CAP_CONF_EXT_WINDOW:
+			if (olen != 2)
+				break;
 			txwin_ext = val;
 			break;
 		}

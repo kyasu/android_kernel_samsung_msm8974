@@ -1110,7 +1110,11 @@ static DEVICE_ATTR(sensorRGB, 0664, sensorRGB_show, sensorRGB_store);
 #define MAX_FILE_NAME	128
 #define TUNING_FILE_PATH "/sdcard/"
 static char tuning_file[MAX_FILE_NAME];
-
+#if 0
+/*
+ * Do not use below code but only for Image Quality Debug in Developing Precess.
+ * Do not comment in this code Because there are contained vulnerability.
+ */
 static char char_to_dec(char data1, char data2)
 {
 	char dec;
@@ -1253,6 +1257,7 @@ static void load_tuning_file(char *filename)
 err:
 	set_fs(fs);
 }
+#endif
 
 static ssize_t tuning_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
@@ -1267,7 +1272,16 @@ static ssize_t tuning_show(struct device *dev,
 static ssize_t tuning_store(struct device *dev,
 			struct device_attribute *attr, const char *buf, size_t size)
 {
+/*
+ * Do not use below code but only for Image Quality Debug in Developing Precess.
+ * Do not comment in this code Because there are contained vulnerability.
+ */
+/*
 	char *pt;
+
+	if (buf == NULL || strchr(buf, '.') || strchr(buf, '/'))
+		return size;
+
 	memset(tuning_file, 0, sizeof(tuning_file));
 	snprintf(tuning_file, MAX_FILE_NAME, "%s%s", TUNING_FILE_PATH, buf);
 
@@ -1283,7 +1297,7 @@ static ssize_t tuning_store(struct device *dev,
 	DPRINT("%s\n", tuning_file);
 
 	load_tuning_file(tuning_file);
-
+*/
 	return size;
 }
 static DEVICE_ATTR(tuning, S_IRUGO | S_IWUSR | S_IWGRP,
