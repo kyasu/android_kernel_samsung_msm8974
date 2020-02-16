@@ -582,7 +582,7 @@ static struct device_attribute extcon_attrs[] = {
 static int create_extcon_class(void)
 {
 	if (!extcon_class) {
-		extcon_class = class_create(THIS_MODULE, "extcon");
+		extcon_class = class_create(THIS_MODULE, "extcon-sec");
 		if (IS_ERR(extcon_class))
 			return PTR_ERR(extcon_class);
 		extcon_class->dev_attrs = extcon_attrs;
