@@ -4774,7 +4774,7 @@ static int selinux_nlmsg_perm(struct sock *sk, struct sk_buff *skb)
 #ifdef CONFIG_ALWAYS_ENFORCE
 			if (security_get_allow_unknown())
 #else
-			if (!selinux_enforcing || security_get_allow_unknown())
+			if (selinux_enforcing && !security_get_allow_unknown())
 #endif
 				return rc;
 			rc = 0;
