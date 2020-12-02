@@ -29,6 +29,10 @@ extern struct class *sec_class;
 #include <linux/earlysuspend.h>
 #include <linux/mutex.h>
 
+#ifdef CONFIG_FB
+#include <linux/notifier.h>
+#endif
+
 #define CONFIG_GLOVE_TOUCH
 #if defined(CONFIG_GLOVE_TOUCH)
 #define TK_BIT_GLOVE 0x40
@@ -137,6 +141,10 @@ struct cypress_touchkey_info {
 
 #ifdef TK_KEYPAD_ENABLE
 	atomic_t keypad_enable;
+#endif
+
+#if defined(CONFIG_FB) && defined(CONFIG_KEYBOARD_CYPRESS_TOUCHKEY_KS01)
+	struct notifier_block fb_notif;
 #endif
 };
 
