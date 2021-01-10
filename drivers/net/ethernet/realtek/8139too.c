@@ -828,6 +828,9 @@ retry:
 	/* enable PCI bus-mastering */
 	pci_set_master (pdev);
 
+	u64_stats_init(&tp->rx_stats.syncp);
+	u64_stats_init(&tp->tx_stats.syncp);
+
 	if (use_io) {
 		ioaddr = pci_iomap(pdev, 0, 0);
 		if (!ioaddr) {
@@ -2547,16 +2550,16 @@ rtl8139_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
 	netdev_stats_to_stats64(stats, &dev->stats);
 
 	do {
-		start = u64_stats_fetch_begin_bh(&tp->rx_stats.syncp);
+		start = u64_stats_fetch_begin_irq(&tp->rx_stats.syncp);
 		stats->rx_packets = tp->rx_stats.packets;
 		stats->rx_bytes = tp->rx_stats.bytes;
-	} while (u64_stats_fetch_retry_bh(&tp->rx_stats.syncp, start));
+	} while (u64_stats_fetch_retry_irq(&tp->rx_stats.syncp, start));
 
 	do {
-		start = u64_stats_fetch_begin_bh(&tp->tx_stats.syncp);
+		start = u64_stats_fetch_begin_irq(&tp->tx_stats.syncp);
 		stats->tx_packets = tp->tx_stats.packets;
 		stats->tx_bytes = tp->tx_stats.bytes;
-	} while (u64_stats_fetch_retry_bh(&tp->tx_stats.syncp, start));
+	} while (u64_stats_fetch_retry_irq(&tp->tx_stats.syncp, start));
 
 	return stats;
 }

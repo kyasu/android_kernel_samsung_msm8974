@@ -728,6 +728,8 @@ static int igb_alloc_queues(struct igb_adapter *adapter)
 		/* For 82575, context index must be unique per ring. */
 		if (adapter->hw.mac.type == e1000_82575)
 			set_bit(IGB_RING_FLAG_TX_CTX_IDX, &ring->flags);
+		u64_stats_init(&ring->tx_syncp);
+		u64_stats_init(&ring->tx_syncp2);
 		adapter->tx_ring[i] = ring;
 	}
 	/* Restore the adapter's original node */
@@ -759,6 +761,7 @@ static int igb_alloc_queues(struct igb_adapter *adapter)
 		if (adapter->hw.mac.type == e1000_i350)
 			set_bit(IGB_RING_FLAG_RX_LB_VLAN_BSWAP, &ring->flags);
 
+		u64_stats_init(&ring->rx_syncp);
 		adapter->rx_ring[i] = ring;
 	}
 	/* Restore the adapter's original node */
@@ -4658,10 +4661,10 @@ void igb_update_stats(struct igb_adapter *adapter,
 		}
 
 		do {
-			start = u64_stats_fetch_begin_bh(&ring->rx_syncp);
+			start = u64_stats_fetch_begin_irq(&ring->rx_syncp);
 			_bytes = ring->rx_stats.bytes;
 			_packets = ring->rx_stats.packets;
-		} while (u64_stats_fetch_retry_bh(&ring->rx_syncp, start));
+		} while (u64_stats_fetch_retry_irq(&ring->rx_syncp, start));
 		bytes += _bytes;
 		packets += _packets;
 	}
@@ -4674,10 +4677,10 @@ void igb_update_stats(struct igb_adapter *adapter,
 	for (i = 0; i < adapter->num_tx_queues; i++) {
 		struct igb_ring *ring = adapter->tx_ring[i];
 		do {
-			start = u64_stats_fetch_begin_bh(&ring->tx_syncp);
+			start = u64_stats_fetch_begin_irq(&ring->tx_syncp);
 			_bytes = ring->tx_stats.bytes;
 			_packets = ring->tx_stats.packets;
-		} while (u64_stats_fetch_retry_bh(&ring->tx_syncp, start));
+		} while (u64_stats_fetch_retry_irq(&ring->tx_syncp, start));
 		bytes += _bytes;
 		packets += _packets;
 	}
